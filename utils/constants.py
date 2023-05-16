@@ -52,10 +52,20 @@ class Cte:
                   'adult_ab_a_e', 'adult_ab_a_h', 'adult_ab_e_h',
                   'adult_ab_a_e_h']
 
+    ADULT_RC_LIST = [[0,1,0,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,1,0,0,0,0],
+                     [0,1,0,0,1,0,0,0,0,0],[0,1,0,0,0,1,0,0,0,0],[0,0,0,0,1,1,0,0,0,0],
+                     [0,1,0,0,1,1,0,0,0,0]]
+
     LOAN_AB_LIST = ['loan_ab_lamount', 'loan_ab_lduration', 'loan_ab_income', 'loan_ab_savings',\
                   'loan_ab_la_ld', 'loan_ab_la_i', 'loan_ab_la_s', 'loan_ab_ld_i', 'loan_ab_ld_s', 'loan_ab_i_s',\
                   'loan_ab_la_ld_i', 'loan_ab_la_ld_s', 'Loan_ab_la_i_s', 'loan_ab_ld_i_s',\
                   'loan_ab_la_ld_i_s']
+
+    LOAN_RC_LIST = [[0,0,0,1,0,0,0],[0,0,0,0,1,0,0],[0,0,0,0,0,1,0],[0,0,0,0,0,0,1],
+                     [0,0,0,1,1,0,0],[0,0,0,1,0,1,0],[0,0,0,1,0,0,1],[0,0,0,0,1,1,0],[0,0,0,0,1,0,1],[0,0,0,0,0,1,1],
+                     [0,0,0,1,1,1,0],[0,0,0,1,1,0,1],[0,0,0,1,0,1,1],[0,0,0,0,1,1,1],
+                     [0,0,0,1,1,1,1]]
+
 
     DATASET_LIST = [COLLIDER,
                     TRIANGLE,

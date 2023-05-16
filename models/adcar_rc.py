@@ -4,6 +4,9 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
+from models import rcpna
+from utils.constants import Cte
+from sklearn.metrics import classification_report, confusion_matrix
 
 import numpy as np
 from tqdm import tqdm
@@ -28,14 +31,14 @@ class PointDataset(Dataset):
         return self.x[idx], self.u[idx]
 
 
-class ADCAR(object):
+class ADCAR_RC(object):
 
-    def __init__(self, input_dim, out_dim, ad_model, model_vaca, data_module, alpha=1, batch_size=64,
+    def __init__(self, cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
+                 train_X, x_test, test_rc, rc_quantile=0.01, alpha=1, batch_size=64,
                  max_epoch=50, device='cuda:0', data='loan', cost_f=True, R_ratio=0.1, lr=1e-4):
         super().__init__()
 
         self.input_dim = input_dim
-        self.out_dim = out_dim
         self.batch_size = batch_size
         self.max_epoch = max_epoch
         self.device = device
@@ -44,6 +47,12 @@ class ADCAR(object):
         self.model_vaca = model_vaca.to(device)
         self.alpha = alpha
         self.data_module = data_module
+        self.cfg = cfg
+        self.intervention_features = intervention_features
+        self.train_X = train_X
+        self.x_test = x_test
+        self.test_rc = test_rc
+        self.rc_quantile = rc_quantile
         if cost_f:
             self.cost_f = True
         else:
@@ -52,16 +61,7 @@ class ADCAR(object):
         self.model_vaca.eval()
         self.model_vaca.freeze()
 
-        self.net = nn.Sequential(
-            nn.Linear(self.input_dim, 2048),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(2048, 2048),
-            nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(2048, self.out_dim)
-
-        ).to(self.device)
+        self.net = rcpna.RCPNA(self.cfg, self.data_module, self.intervention_features).to(self.device)
 
         self.optim = optim.Adam(self.net.parameters(), lr=lr)
         self.loss_mse = nn.MSELoss()
@@ -71,16 +71,99 @@ class ADCAR(object):
         self.ad_net.load_state_dict(self.ad_model.net.state_dict())
         if ad_model.name == 'deepsvdd':
             self.ad_c = self.ad_model.c.to(self.device)
-        self.param_name = f'{self.data}_{self.alpha}_{self.batch_size}_{self.max_epoch}_{self.out_dim}_{self.cost_f}_{R_ratio}_{lr}'
+        self.param_name = f'{self.data}_{self.alpha}_{self.batch_size}_{self.max_epoch}_{self.intervention_features}_{self.cost_f}_{R_ratio}_{lr}'
 
         self.R_ratio = R_ratio
 
         self._get_scale()
+        self._get_rc_res()
+
+
+    def _get_rc_res(self):
+        lst_rc_pred = []
+        lst_rc_gt = []
+        if self.data == 'loan':
+            for i in self.test_rc:
+                lst_rc_gt.extend(Cte.LOAN_RC_LIST[i])
+
+            lst_prob = []
+            for i in range(len(self.train_X)):
+                prob = self.model_vaca.get_distribution(
+                    F.pad(self.train_X[i].reshape(1, -1), (0, 1, 0, 0)).to(self.device), self.data_module,
+                    device=self.device)
+                lst_prob.append(prob)
+            lst_prob = np.array(lst_prob)
+            self.prob_low = np.quantile(lst_prob, self.rc_quantile, axis=0)
+            self.prob_high = np.quantile(lst_prob, (1 - self.rc_quantile), axis=0)
+            for i in range(len(self.x_test)):
+                prob = self.model_vaca.get_distribution(
+                    F.pad(self.x_test[i].reshape(1, -1), (0, 1, 0, 0)).to(self.device), self.data_module,
+                    device=self.device)
+                res = ((prob <= self.prob_high) == False).astype(int) + ((prob >= self.prob_low) == False).astype(int)
+                res = np.sum(res[0], axis=1)[:-1]
+                res = np.where(res >= 1, 1, 0)
+                idx_interven = np.zeros(len(res))
+                for j in self.intervention_features:
+                    idx_interven[j] += 1
+                res = res * idx_interven
+                lst_rc_pred.extend(res)
+            print(classification_report(y_true=lst_rc_gt, y_pred=lst_rc_pred, digits=5))
+            print(confusion_matrix(y_true=lst_rc_gt, y_pred=lst_rc_pred))
+
+        elif self.data == 'adult':
+            for i in self.test_rc:
+                lst_rc_gt.extend(Cte.ADULT_RC_LIST[i])
+
+            lst_prob = []
+            for i in range(len(self.train_X)):
+                prob = self.model_vaca.get_distribution(F.pad(self.train_X[i].reshape(1,-1), (0,4,0,0)).to(self.device), self.data_module, device=self.device)
+                lst_prob.append(prob)
+            lst_prob = np.array(lst_prob)
+            self.prob_low = np.quantile(lst_prob, self.rc_quantile, axis=0)
+            self.prob_high = np.quantile(lst_prob, (1-self.rc_quantile), axis=0)
+            for i in range(len(self.x_test)):
+                prob = self.model_vaca.get_distribution(F.pad(self.x_test[i].reshape(1,-1), (0,4,0,0)).to(self.device), self.data_module, device=self.device)
+                res = ((prob <= self.prob_high) == False).astype(int) + ((prob >= self.prob_low) == False).astype(int)
+                res = np.sum(res[0], axis=1)[:-1]
+                res = np.where(res >= 1, 1, 0)
+                idx_interven = np.zeros(len(res))
+                for j in self.intervention_features:
+                    idx_interven[j] += 1
+                res = res * idx_interven
+                lst_rc_pred.extend(res)
+            print(classification_report(y_true=lst_rc_gt, y_pred=lst_rc_pred, digits=5))
+            print(confusion_matrix(y_true=lst_rc_gt, y_pred=lst_rc_pred))
+
+        elif self.data == 'loan':
+            lst_prob = []
+            for i in range(len(self.train_X)):
+                prob = self.model_vaca.get_distribution(self.train_X[i].reshape(1, -1).to(self.device), self.data_module,
+                    device=self.device)
+                lst_prob.append(prob)
+            lst_prob = np.array(lst_prob)
+            self.prob_low = np.quantile(lst_prob, self.rc_quantile, axis=0)
+            self.prob_high = np.quantile(lst_prob, (1 - self.rc_quantile), axis=0)
+            for i in range(len(self.x_test)):
+                prob = self.model_vaca.get_distribution(self.x_test[i].reshape(1, -1).to(self.device), self.data_module,
+                    device=self.device)
+                res = ((prob <= self.prob_high) == False).astype(int) + ((prob >= self.prob_low) == False).astype(int)
+                res = np.sum(res[0], axis=1)[:-1]
+                res = np.where(res >= 1, 1, 0)
+                idx_interven = np.zeros(len(res))
+                for j in self.intervention_features:
+                    idx_interven[j] += 1
+                res = res * idx_interven
+                lst_rc_pred.extend(res)
+
+        else:
+            NotImplementedError
+
+
 
     def _get_scale(self):
         if self.data == 'loan':
             self.scale = (self.data_module.scaler.inverse_transform(
-                [[1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]]) - self.data_module.scaler.inverse_transform(
+                [[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0]]) - self.data_module.scaler.inverse_transform(
                 [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]))[0][1:].to(self.device)
         elif self.data == 'adult':
             lst_zeros = np.zeros(44)
@@ -496,7 +579,7 @@ class ADCAR(object):
         else:
             NotImplementedError
 
-    def train_ADCAR(self, train_x, train_u, valid_x, valid_u):
+    def train_ADCAR_RC(self, train_x, train_u, valid_x, valid_u):
         pd_train = PointDataset(torch.tensor(train_x).float(), torch.tensor(train_u).float())
         pd_eval = PointDataset(torch.tensor(valid_x).float(), torch.tensor(valid_u).float())
         train_iter = DataLoader(pd_train, self.batch_size, shuffle=True, worker_init_fn=np.random.seed(42))
@@ -510,8 +593,8 @@ class ADCAR(object):
             # print(f'Training loss: {train_loss}, Evaluation loss {eval_loss}')
             if eval_loss < best_eval_loss:
                 best_eval_loss = eval_loss
-                torch.save(self.net.state_dict(), f'./saved_models/ADCAR_{self.param_name}.pt')
+                torch.save(self.net.state_dict(), f'./saved_models/ADCAR_RC_{self.param_name}.pt')
 
     def load_model(self):
-        self.net.load_state_dict(torch.load(f'./saved_models/ADCAR_{self.param_name}.pt', map_location=self.device))
+        self.net.load_state_dict(torch.load(f'./saved_models/ADCAR_RC_{self.param_name}.pt'))
         self.net.to(self.device)

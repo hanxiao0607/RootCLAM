@@ -152,11 +152,15 @@ class VACAModule(nn.Module):
         x = getattr(data, attr)
         return x.view(data.num_graphs, -1)
 
-    def encoder(self, X, edge_index, edge_attr=None, return_mean=False, **kwargs):
+    def encoder(self, X, edge_index, edge_attr=None, return_mean=False, get_prob=False, **kwargs):
         logits = self.encoder_module(X, edge_index, edge_attr=edge_attr, **kwargs)
         if return_mean:
             mean, qz_x = self.likelihood_z(logits, return_mean=True)
-            return mean, qz_x
+            if get_prob:
+                prob = qz_x.log_prob(logits)
+                return mean, qz_x, prob
+            else:
+                return mean, qz_x
         else:
             qz_x = self.likelihood_z(logits)
             return qz_x

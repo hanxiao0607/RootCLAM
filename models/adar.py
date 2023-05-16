@@ -596,5 +596,5 @@ class ADAR(object):
                 torch.save(self.net.state_dict(), f'./saved_models/ADAR_{self.param_name}.pt')
 
     def load_model(self):
-        self.net.load_state_dict(torch.load(f'./saved_models/ADAR_{self.param_name}.pt'))
+        self.net.load_state_dict(torch.load(f'./saved_models/ADAR_{self.param_name}.pt', map_location=self.device))
         self.net.to(self.device)

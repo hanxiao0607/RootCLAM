@@ -200,13 +200,19 @@ class HVACAModule(nn.Module):
             embeddings.append(H_i)
         return torch.cat(embeddings, dim=1).view(-1, self.dim_input_enc)
 
-    def encoder(self, X, edge_index, edge_attr=None, return_mean=False, **kwargs):
+    def encoder(self, X, edge_index, edge_attr=None, return_mean=False, get_prob=False, **kwargs):
         logits = self.encoder_module(self.encoder_embeddings(X),
                                      edge_index,
                                      edge_attr=edge_attr, **kwargs)
         if return_mean:
             mean, qz_x = self.likelihood_z(logits, return_mean=True)
-            return mean, qz_x
+            if get_prob:
+                latent_dim = logits.size(1) // 2
+                mu, log_var = torch.split(logits, split_size_or_sections=latent_dim, dim=1)
+                prob = qz_x.log_prob(mu)
+                return mean, qz_x, prob
+            else:
+                return mean, qz_x
         else:
             qz_x = self.likelihood_z(logits)
             return qz_x

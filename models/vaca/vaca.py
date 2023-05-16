@@ -403,6 +403,15 @@ class VACA(pl.LightningModule):
         else:
             return x_CF
 
+    def get_distribution(self, x, data_module, device='cuda:0'):
+        lst_prob = []
+        for i in range(len(x)):
+
+            _, _, prob = self.model.encoder(x, data_module.train_dataset[0].edge_index.to(device),
+                                          edge_attr=data_module.train_dataset[0].edge_attr.to(device),
+                                          return_mean=True, get_prob=True, node_ids=data_module.train_dataset[0].node_ids.to(device))
+            lst_prob.append(prob.cpu().numpy())
+        return np.array(lst_prob)
 
     def get_changed(self, x, x_delta, data_module, likelihood_list, inverse=False, data='loan', device='cuda:0'):
         if data == 'loan':

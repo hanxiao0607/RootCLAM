@@ -138,7 +138,7 @@ class DeepSVDD(object):
                 pd.DataFrame(fixed_center.cpu().numpy()).to_csv(f'./saved_models/DeepSVDD_center_{self.data}.csv')
 
     def load_model(self):
-        self.net.load_state_dict(torch.load(f'./saved_models/DeepSVDD_{self.data}.pt'))
+        self.net.load_state_dict(torch.load(f'./saved_models/DeepSVDD_{self.data}.pt', map_location=self.device))
         self.net.to(self.device)
         self.c = torch.Tensor(
             pd.read_csv(f'./saved_models/DeepSVDD_center_{self.data}.csv', index_col=0).iloc[:, 0])

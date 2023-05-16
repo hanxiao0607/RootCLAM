@@ -114,7 +114,7 @@ class HeterogeneousSCMDataModule(pl.LightningDataModule):
             dataset_fn = LoanSCM
 
         elif dataset_name == Cte.LOAN_AB_LA_I_S:
-            from datasets.Loan_ab_la_i_s import LoanSCM
+            from datasets.loan_ab_la_i_s import LoanSCM
 
             dataset_fn = LoanSCM
 

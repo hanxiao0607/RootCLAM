@@ -127,7 +127,7 @@ class AutoEncoder(object):
                 torch.save(self.net.state_dict(), f'./saved_models/AutoEncoder_{self.data}.pt')
 
     def load_model(self):
-        self.net.load_state_dict(torch.load(f'./saved_models/AutoEncoder_{self.data}.pt'))
+        self.net.load_state_dict(torch.load(f'./saved_models/AutoEncoder_{self.data}.pt', map_location=self.device))
         self.net.to(self.device)
 
     def get_R(self, train_x, nu=None):
