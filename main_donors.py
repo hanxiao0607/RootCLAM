@@ -134,7 +134,7 @@ def main():
 
     assert data_module is not None, cfg['dataset']
 
-    thres_n, thres_ab, df_train, df_valid, df_test = utils.split_dataset(data_module, name=cfg['dataset']['name'], \
+    thres_n, thres_ab, df_train, df_valid, df_test, test_rc = utils.split_dataset(data_module, name=cfg['dataset']['name'], \
                                                                          training_size=args.training_size,
                                                                          seed=args.seed)
 
