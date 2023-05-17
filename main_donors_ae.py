@@ -20,9 +20,9 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--dataset_file', default='_params/dataset_loan_all.yaml', type=str,
+    parser.add_argument('--dataset_file', default='_params/dataset_donors_all.yaml', type=str,
                         help='path to configuration file for the dataset')
-    parser.add_argument('--model_file', default='_params/model_vaca_loan.yaml', type=str,
+    parser.add_argument('--model_file', default='_params/model_vaca_donors.yaml', type=str,
                         help='path to configuration file for the dataset')
     parser.add_argument('--trainer_file', default='_params/trainer.yaml', type=str,
                         help='path to configuration file for the training')
@@ -47,7 +47,7 @@ def main():
 
     parser.add_argument('--plots', default=0, type=int, help='run code with plotting (1) or without (0), default: 0')
 
-    parser.add_argument('--anomaly_detection_model', default='deepsvdd', type=str,
+    parser.add_argument('--anomaly_detection_model', default='autoencoder', type=str,
                         help='anomaly detection model deepsvdd or autoencoder')
 
     parser.add_argument('--training_size', default=10000, type=int, help='training size')
@@ -64,7 +64,7 @@ def main():
 
     parser.add_argument('--max_epoch_deepsvdd', default=1000, type=int, help='max epoch for training deepsvdd')
     parser.add_argument('--batch_size_deepsvdd', default=1024, type=int, help='batch size for training deepsvdd')
-    parser.add_argument('--out_dim_deepsvdd', default=2048, type=int, help='output dim for deepsvdd')
+    parser.add_argument('--out_dim_deepsvdd', default=32, type=int, help='output dim for deepsvdd')
     parser.add_argument('--nu_deepsvdd', default=0.005, type=float, help='quantile for deepsvdd')
 
     # ADCAR
@@ -72,14 +72,14 @@ def main():
     parser.add_argument('--train_ADAR', default=1, type=int, help='train (1) or load (0) ADAR')
     parser.add_argument('--train_ADCAR_RC', default=1, type=int, help='train (1) or load (0) ADCAR_RC')
     parser.add_argument('--cost_function', default=1, type=int, help='using cost function')
-    parser.add_argument('--l2_alpha', default=5e-4, type=float, help='Weight for the l2 loss')
+    parser.add_argument('--l2_alpha', default=1e-4, type=float, help='Weight for the l2 loss')
     parser.add_argument('--device', default='cuda:0', type=str, help='Device to use')
-    parser.add_argument('--max_epoch_ADCAR', default=100, type=int, help='max epoch for training ADCAR')
+    parser.add_argument('--max_epoch_ADCAR', default=50, type=int, help='max epoch for training ADCAR')
     parser.add_argument('--batch_size_ADCAR', default=128, type=int, help='batch size for training ADCAR')
-    parser.add_argument('--learning_rate_ADCAR', default=1e-4, type=float, help='Learning rate for ADCAR')
+    parser.add_argument('--learning_rate_ADCAR', default=1e-5, type=float, help='Learning rate for ADCAR')
     parser.add_argument('--rc_quantile', default=0.125, type=float, help='Abnormal quantile for root cause')
 
-    parser.add_argument('--r_ratio', default=0.0, type=float, help='R ratio for flap samples')
+    parser.add_argument('--r_ratio', default=0.1, type=float, help='R ratio for flap samples')
 
     args = parser.parse_args()
 
@@ -126,41 +126,20 @@ def main():
 
         dataset_params = cfg['dataset']['params'].copy()
         dataset_params['dataset_name'] = cfg['dataset']['name']
-        dataset_params['num_samples_tr'] = args.training_size * 10
+        dataset_params['num_samples_tr'] = args.training_size
 
         data_module = HeterogeneousSCMDataModule(**dataset_params)
 
         data_module.prepare_data()
 
     assert data_module is not None, cfg['dataset']
-    lst_ab_data_module = []
-    from data_modules.het_scm import HeterogeneousSCMDataModule
-    if cfg['dataset']['name'] == 'adult':
-        for i in Cte.ADULT_AB_LIST:
-            dataset_params = cfg['dataset']['params'].copy()
-            dataset_params['dataset_name'] = i
-            dataset_params['num_samples_tr'] = args.training_size * 10
 
-            data_module_ab = HeterogeneousSCMDataModule(**dataset_params)
+    thres_n, thres_ab, df_train, df_valid, df_test = utils.split_dataset(data_module, name=cfg['dataset']['name'], \
+                                                                         training_size=args.training_size,
+                                                                         seed=args.seed)
 
-            data_module_ab.prepare_data()
-            lst_ab_data_module.append(data_module_ab)
-
-    elif cfg['dataset']['name'] == 'loan':
-        for i in Cte.LOAN_AB_LIST:
-            dataset_params = cfg['dataset']['params'].copy()
-            dataset_params['dataset_name'] = i
-            dataset_params['num_samples_tr'] = args.training_size * 10
-
-            data_module_ab = HeterogeneousSCMDataModule(**dataset_params)
-
-            data_module_ab.prepare_data()
-            lst_ab_data_module.append(data_module_ab)
-    thres_n, thres_ab, df_train, df_valid, df_test, test_rc = utils.split_dataset(data_module,
-                                                                                  lst_ab_data_module=lst_ab_data_module,
-                                                                                  name=cfg['dataset']['name'], \
-                                                                                  training_size=args.training_size,
-                                                                                  seed=args.sample_seed)
+    df_test.to_csv('data/donors_test.csv')
+    df_train.to_csv('data/donors_train.csv')
 
     # %% Load model
     model_vaca = None
@@ -290,10 +269,6 @@ def main():
             json.dump(output_valid, f)
         print(f'Experiment folder: {save_dir}')
 
-    df_test.to_csv('data/loan_test.csv')
-    df_valid.to_csv('data/loan_valid.csv')
-    df_train.to_csv('data/loan_train.csv')
-
     if cfg['dataset']['name'] == 'loan':
         input_dim = data_module.train_dataset.X0.shape[-1]
     elif cfg['dataset']['name'] == 'adult':
@@ -357,10 +332,7 @@ def main():
     else:
         NotImplementedError
 
-    # for i in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]:
-    for i in [0.0, 0.3, 0.5]:
-        pl.seed_everything(cfg['seed'])
-        utils.set_seed(cfg['seed'])
+    for i in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]:
         print('-' * 50)
         print(f'Results for R = {i}')
 

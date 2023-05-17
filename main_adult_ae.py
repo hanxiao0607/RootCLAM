@@ -20,7 +20,7 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--dataset_file', default='_params/dataset_adult_all.yaml', type=str,
+    parser.add_argument('--dataset_file', default='_params/dataset_adult_ae.yaml', type=str,
                         help='path to configuration file for the dataset')
     parser.add_argument('--model_file', default='_params/model_vaca_adult.yaml', type=str,
                         help='path to configuration file for the dataset')
@@ -52,7 +52,7 @@ def main():
 
     parser.add_argument('--training_size', default=10000, type=int, help='training size')
     # AutoEncoder
-    parser.add_argument('--train_autoencoder', default=1, type=int, help='train (1) or load (0) autoencoder')
+    parser.add_argument('--train_autoencoder', default=1, type=int, help='train (1) or load(0) autoencoder')
 
     parser.add_argument('--max_epoch_autoencoder', default=1000, type=int, help='max epoch for training autoencoder')
     parser.add_argument('--batch_size_autoencoder', default=1024, type=int, help='batch size for training autoencoder')
@@ -77,7 +77,7 @@ def main():
     parser.add_argument('--max_epoch_ADCAR', default=20, type=int, help='max epoch for training ADCAR')
     parser.add_argument('--batch_size_ADCAR', default=128, type=int, help='batch size for training ADCAR')
     parser.add_argument('--learning_rate_ADCAR', default=1e-4, type=float, help='Learning rate for ADCAR')
-    parser.add_argument('--rc_quantile', default=0.95, type=float, help='Abnormal quantile for root cause')
+    parser.add_argument('--rc_quantile', default=0.125, type=float, help='Abnormal quantile for root cause')
 
     parser.add_argument('--r_ratio', default=0.0, type=float, help='R ratio for flap samples')
 
@@ -160,9 +160,11 @@ def main():
 
             data_module_ab.prepare_data()
             lst_ab_data_module.append(data_module_ab)
-    thres_n, thres_ab, df_train, df_valid, df_test, test_rc = utils.split_dataset(data_module, lst_ab_data_module=lst_ab_data_module, name=cfg['dataset']['name'], \
-                                                                         training_size=args.training_size,
-                                                                         seed=args.sample_seed)
+    thres_n, thres_ab, df_train, df_valid, df_test, test_rc = utils.split_dataset(data_module,
+                                                                                  lst_ab_data_module=lst_ab_data_module,
+                                                                                  name=cfg['dataset']['name'], \
+                                                                                  training_size=args.training_size,
+                                                                                  seed=args.sample_seed)
 
     # %% Load model
     model_vaca = None
@@ -180,6 +182,7 @@ def main():
 
     model_vaca = VACA(**model_params)
     model_vaca.set_random_train_sampler(data_module.get_random_train_sampler())
+
     assert model_vaca is not None
 
     utools.enablePrint()
@@ -207,14 +210,9 @@ def main():
 
     # %% Prepare training
     if args.yaml_file == '':
-        if (cfg['dataset']['name'] in [Cte.GERMAN]) and (cfg['dataset']['params3']['train_kfold'] == True):
-            save_dir = argtools.mkdir(os.path.join(cfg['root_dir'],
-                                                   argtools.get_experiment_folder(cfg),
-                                                   str(cfg['seed']), str(cfg['dataset']['params3']['kfold_idx'])))
-        else:
-            save_dir = argtools.mkdir(os.path.join(cfg['root_dir'],
-                                                   argtools.get_experiment_folder(cfg),
-                                                   str(cfg['seed'])))
+        save_dir = argtools.mkdir(os.path.join(cfg['root_dir'],
+                                               argtools.get_experiment_folder(cfg),
+                                               str(cfg['seed'])))
     else:
         save_dir = os.path.join(*args.yaml_file.split('/')[:-1])
     print(f'Save dir: {save_dir}')
@@ -355,7 +353,7 @@ def main():
         lst_dist, lst_pred = ad_model.predict(test_X, label=df_test['label'].values, result=1)
 
     if cfg['dataset']['name'] == 'loan':
-        out_dim = 6
+        out_dim = 4
     elif cfg['dataset']['name'] == 'adult':
         out_dim = 3
     elif cfg['dataset']['name'] == 'donors':
@@ -369,16 +367,21 @@ def main():
         utils.set_seed(cfg['seed'])
         print('-' * 50)
         print(f'Results for R = {i}')
+
+        x_train, u_train, x_valid, u_valid, x_test, u_test, df, rc_test = utils.prepare_adcar_training_data(df_test,
+                                                                                                            lst_pred,
+                                                                                                            test_rc,
+                                                                                                            data_module,
+                                                                                                            cfg[
+                                                                                                                'dataset'][
+                                                                                                                'name'])
+
         model_adar = adar.ADAR(input_dim, out_dim, ad_model, model_vaca, data_module,
                                alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
                                device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
                                # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
                                R_ratio=i, lr=args.learning_rate_ADCAR)
 
-        x_train, u_train, x_valid, u_valid, x_test, u_test, df = utils.prepare_adcar_training_data(df_test, lst_pred,
-                                                                                                   data_module,
-                                                                                                   cfg['dataset'][
-                                                                                                       'name'])
         if args.train_ADAR:
             print('Training ADAR:')
             model_adar.train_ADAR(x_train, u_train, x_valid, u_valid)
@@ -398,7 +401,7 @@ def main():
         print('Results for ADCAR:')
         model_adcar.predict(x_test, u_test, thres_n=thres_n)
 
-        print('-'*50)
+        print('-' * 50)
         if cfg['dataset']['name'] == 'loan':
             intervention_features = [3, 4, 5, 6]
         elif cfg['dataset']['name'] == 'adult':
@@ -408,17 +411,14 @@ def main():
         else:
             NotImplementedError
 
-        model_adcar_rc = adcar_rc.ADCAR_RC(input_dim, ad_model, model_vaca, data_module, intervention_features,
-                                           test_X, test_rc, rc_quantile=args.rc_quantile,
+        model_adcar_rc = adcar_rc.ADCAR_RC(cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
+                                           train_X, x_test, rc_test, rc_quantile=args.rc_quantile,
                                            alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR,
                                            max_epoch=args.max_epoch_ADCAR,
                                            device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
                                            # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
                                            R_ratio=i, lr=args.learning_rate_ADCAR)
-        if args.train_ADCAR_RC:
-            print('Trianing ADCAR_RC')
-            model_adcar_rc.train_ADCAR_RC(x_train, u_train, x_valid, u_valid)
-        print('Results for ADCAR_RC:')
+        model_adcar_rc.train_ADCAR_RC(x_train, u_train, x_valid, u_valid)
         model_adcar_rc.predict(x_test, u_test, thres_n=thres_n)
 
     print('done')

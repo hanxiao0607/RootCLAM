@@ -49,6 +49,7 @@ class ADCAR_RC(object):
         self.data_module = data_module
         self.cfg = cfg
         self.intervention_features = intervention_features
+        self.intervention_dim = len(intervention_features)
         self.train_X = train_X
         self.x_test = x_test
         self.test_rc = test_rc
@@ -88,25 +89,24 @@ class ADCAR_RC(object):
 
             lst_prob = []
             for i in range(len(self.train_X)):
-                prob = self.model_vaca.get_distribution(
-                    F.pad(self.train_X[i].reshape(1, -1), (0, 1, 0, 0)).to(self.device), self.data_module,
+                prob = self.model_vaca.get_distribution(self.train_X[i].reshape(1, -1).to(self.device), self.data_module,
                     device=self.device)
                 lst_prob.append(prob)
             lst_prob = np.array(lst_prob)
             self.prob_low = np.quantile(lst_prob, self.rc_quantile, axis=0)
             self.prob_high = np.quantile(lst_prob, (1 - self.rc_quantile), axis=0)
             for i in range(len(self.x_test)):
-                prob = self.model_vaca.get_distribution(
-                    F.pad(self.x_test[i].reshape(1, -1), (0, 1, 0, 0)).to(self.device), self.data_module,
+                prob = self.model_vaca.get_distribution(self.x_test[i].reshape(1, -1).to(self.device), self.data_module,
                     device=self.device)
                 res = ((prob <= self.prob_high) == False).astype(int) + ((prob >= self.prob_low) == False).astype(int)
-                res = np.sum(res[0], axis=1)[:-1]
+                res = np.sum(res[0], axis=1)
                 res = np.where(res >= 1, 1, 0)
                 idx_interven = np.zeros(len(res))
                 for j in self.intervention_features:
                     idx_interven[j] += 1
                 res = res * idx_interven
                 lst_rc_pred.extend(res)
+            print('Results for root cause analysis:')
             print(classification_report(y_true=lst_rc_gt, y_pred=lst_rc_pred, digits=5))
             print(confusion_matrix(y_true=lst_rc_gt, y_pred=lst_rc_pred))
 
@@ -131,10 +131,11 @@ class ADCAR_RC(object):
                     idx_interven[j] += 1
                 res = res * idx_interven
                 lst_rc_pred.extend(res)
+            print('Results for root cause analysis:')
             print(classification_report(y_true=lst_rc_gt, y_pred=lst_rc_pred, digits=5))
             print(confusion_matrix(y_true=lst_rc_gt, y_pred=lst_rc_pred))
 
-        elif self.data == 'loan':
+        elif self.data == 'donors':
             lst_prob = []
             for i in range(len(self.train_X)):
                 prob = self.model_vaca.get_distribution(self.train_X[i].reshape(1, -1).to(self.device), self.data_module,
@@ -164,7 +165,7 @@ class ADCAR_RC(object):
         if self.data == 'loan':
             self.scale = (self.data_module.scaler.inverse_transform(
                 [[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0]]) - self.data_module.scaler.inverse_transform(
-                [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]))[0][1:].to(self.device)
+                [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]))[0][3:].to(self.device)
         elif self.data == 'adult':
             lst_zeros = np.zeros(44)
             lst_1 = lst_zeros.copy()
@@ -194,7 +195,63 @@ class ADCAR_RC(object):
             org_u = batch[1]
 
             self.optim.zero_grad()
-            output = self.net(org_x)
+            output = []
+
+            for i in range(len(org_x)):
+                if self.data == 'donors':
+                    prob = self.model_vaca.get_distribution(
+                        F.pad(org_x[i].reshape(1, -1), (0, 1, 0, 0)).to(self.device), self.data_module,
+                        device=self.device)
+                    res = ((prob <= self.prob_high) == False).astype(int) + ((prob >= self.prob_low) == False).astype(
+                        int)
+                    res = np.sum(res[0], axis=1)[:-1]
+                    res = np.where(res >= 1, 1, 0)
+                    idx_interven = np.zeros(len(res))
+                    for j in self.intervention_features:
+                        idx_interven[j] += 1
+                    res = res * idx_interven
+                    if sum(res) == 0:
+                        res = idx_interven.copy()
+                    inter_features = np.where(res == 1)[0].astype(int)
+                    out = self.net.forward(F.pad(org_x[i].reshape(1, -1), (0, 1, 0, 0)).to(self.device), inter_features)
+                    output.append(out)
+                elif self.data == 'adult':
+                    prob = self.model_vaca.get_distribution(
+                        F.pad(org_x[i].reshape(1, -1), (0, 4, 0, 0)).to(self.device), self.data_module,
+                        device=self.device)
+                    res = ((prob <= self.prob_high) == False).astype(int) + ((prob >= self.prob_low) == False).astype(
+                        int)
+                    res = np.sum(res[0], axis=1)[:-1]
+                    res = np.where(res >= 1, 1, 0)
+                    idx_interven = np.zeros(len(res))
+                    for j in self.intervention_features:
+                        idx_interven[j] += 1
+                    res = res * idx_interven
+                    if sum(res) == 0:
+                        res = idx_interven.copy()
+                    inter_features = np.where(res == 1)[0].astype(int)
+                    out = self.net.forward(F.pad(org_x[i].reshape(1, -1), (0, 4, 0, 0)).to(self.device), inter_features)
+                    output.append(out)
+                elif self.data == 'loan':
+                    prob = self.model_vaca.get_distribution(org_x[i].reshape(1, -1).to(self.device),
+                                                            self.data_module,
+                                                            device=self.device)
+                    res = ((prob <= self.prob_high) == False).astype(int) + ((prob >= self.prob_low) == False).astype(
+                        int)
+                    res = np.sum(res[0], axis=1)
+                    res = np.where(res >= 1, 1, 0)
+                    idx_interven = np.zeros(len(res))
+                    for j in self.intervention_features:
+                        idx_interven[j] += 1
+                    res = res * idx_interven
+                    if sum(res) == 0:
+                        res = idx_interven.copy()
+                    inter_features = np.where(res == 1)[0].astype(int)
+                    out = self.net.forward(org_x[i].reshape(1, -1).to(self.device), inter_features)
+                    output.append(out)
+                else:
+                    NotImplementedError
+            output = torch.stack(output).reshape(-1, self.intervention_dim)
             x_cf_hat = self.model_vaca.get_changed(org_x.clone(), output, self.data_module,
                                                    self.data_module.likelihood_list, inverse=False, data=self.data,
                                                    device=self.device)
@@ -242,7 +299,68 @@ class ADCAR_RC(object):
                 org_x = batch[0].to(self.device)
                 org_u = batch[1]
 
-                output = self.net(org_x)
+                output = []
+
+                for i in range(len(org_x)):
+                    if self.data == 'donors':
+                        prob = self.model_vaca.get_distribution(
+                            F.pad(org_x[i].reshape(1, -1), (0, 1, 0, 0)).to(self.device), self.data_module,
+                            device=self.device)
+                        res = ((prob <= self.prob_high) == False).astype(int) + (
+                                    (prob >= self.prob_low) == False).astype(
+                            int)
+                        res = np.sum(res[0], axis=1)[:-1]
+                        res = np.where(res >= 1, 1, 0)
+                        idx_interven = np.zeros(len(res))
+                        for j in self.intervention_features:
+                            idx_interven[j] += 1
+                        res = res * idx_interven
+                        if sum(res) == 0:
+                            res = idx_interven.copy()
+                        inter_features = np.where(res == 1)[0].astype(int)
+                        out = self.net.forward(F.pad(org_x[i].reshape(1, -1), (0, 1, 0, 0)).to(self.device),
+                                               inter_features)
+                        output.append(out)
+                    elif self.data == 'adult':
+                        prob = self.model_vaca.get_distribution(
+                            F.pad(org_x[i].reshape(1, -1), (0, 4, 0, 0)).to(self.device), self.data_module,
+                            device=self.device)
+                        res = ((prob <= self.prob_high) == False).astype(int) + (
+                                    (prob >= self.prob_low) == False).astype(
+                            int)
+                        res = np.sum(res[0], axis=1)[:-1]
+                        res = np.where(res >= 1, 1, 0)
+                        idx_interven = np.zeros(len(res))
+                        for j in self.intervention_features:
+                            idx_interven[j] += 1
+                        res = res * idx_interven
+                        if sum(res) == 0:
+                            res = idx_interven.copy()
+                        inter_features = np.where(res == 1)[0].astype(int)
+                        out = self.net.forward(F.pad(org_x[i].reshape(1, -1), (0, 4, 0, 0)).to(self.device),
+                                               inter_features)
+                        output.append(out)
+                    elif self.data == 'loan':
+                        prob = self.model_vaca.get_distribution(org_x[i].reshape(1, -1).to(self.device),
+                                                                self.data_module,
+                                                                device=self.device)
+                        res = ((prob <= self.prob_high) == False).astype(int) + (
+                                    (prob >= self.prob_low) == False).astype(
+                            int)
+                        res = np.sum(res[0], axis=1)
+                        res = np.where(res >= 1, 1, 0)
+                        idx_interven = np.zeros(len(res))
+                        for j in self.intervention_features:
+                            idx_interven[j] += 1
+                        res = res * idx_interven
+                        if sum(res) == 0:
+                            res = idx_interven.copy()
+                        inter_features = np.where(res == 1)[0].astype(int)
+                        out = self.net.forward(org_x[i].reshape(1, -1).to(self.device), inter_features)
+                        output.append(out)
+                    else:
+                        NotImplementedError
+                output = torch.stack(output).reshape(-1, self.intervention_dim)
                 # get x cf hat with vaca
                 x_cf_hat = self.model_vaca.get_changed(org_x.clone(), output, self.data_module,
                                                        self.data_module.likelihood_list, inverse=False, data=self.data,

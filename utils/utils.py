@@ -54,8 +54,8 @@ def split_dataset(data_module, lst_ab_data_module=None, name='loan', training_si
             # gender G, age A, education E, loan amount L, loan duration D, income I, savings S
             exp_val = -0.3 * (- df_temp['L'] - df_temp['D'] + df_temp['I'] + df_temp['S'] + df_temp['I'] * df_temp['S'])
             lst_y = []
-            for i in range(len(df_temp)):
-                lst_y.append((1 + math.exp(exp_val[i])) ** (-1))
+            for j in range(len(df_temp)):
+                lst_y.append((1 + math.exp(exp_val[j])) ** (-1))
             df_temp['y'] = lst_y
             df_ab_temp = df_temp.loc[df_temp['y'] < thres_ab]
             df_ab_temp['label'] = 1
@@ -194,7 +194,7 @@ def split_dataset(data_module, lst_ab_data_module=None, name='loan', training_si
 
 def get_summed_xGT(data_module, org_u, delta_u, data='loan'):
     if data == 'loan':
-        u_pad = F.pad(delta_u, (1, 0, 0, 0))
+        u_pad = F.pad(delta_u, (3, 0, 0, 0))
         u_pad = u_pad.detach().cpu().numpy()
         x, u = data_module.train_dataset.get_interGT(u_g=(org_u + u_pad))
         return data_module.scaler.transform(x)

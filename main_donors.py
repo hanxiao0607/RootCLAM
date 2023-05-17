@@ -12,7 +12,7 @@ from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
 import utils.args_parser as argtools
 import utils.tools as utools
 from utils.constants import Cte
-from models import deepsvdd, adcar, adar, ae
+from models import deepsvdd, adcar, adar, ae, adcar_rc
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -38,11 +38,10 @@ def main():
     parser.add_argument('-s', '--seed', default=0, type=int, help='set random seed, default: random')
     parser.add_argument('-r', '--root_dir', default='', type=str, help='directory for storing results')
     parser.add_argument('--data_dir', default='', type=str, help='data directory')
+    parser.add_argument('--sample_seed', default=0, type=int, help='seed for sampling')
 
     parser.add_argument('-i', '--is_training', default=1, type=int,
                         help='run with training (1) or without training (0)')
-    # parser.add_argument('-f', '--eval_fair', default=True, action="store_true",
-    #                     help='run code with counterfactual fairness experiment (only for German dataset), default: False')
     parser.add_argument('--show_results', default=0, action="store_true",
                         help='run with evaluation (1) or without(0), default: 1')
 
@@ -50,6 +49,7 @@ def main():
 
     parser.add_argument('--anomaly_detection_model', default='deepsvdd', type=str,
                         help='anomaly detection model deepsvdd or autoencoder')
+
     parser.add_argument('--training_size', default=10000, type=int, help='training size')
     # AutoEncoder
     parser.add_argument('--train_autoencoder', default=1, type=int, help='train (1) or load(0) autoencoder')
@@ -60,7 +60,7 @@ def main():
     parser.add_argument('--nu_autoencoder', default=0.005, type=float, help='quantile for autoencoder')
 
     # DeepSVDD
-    parser.add_argument('--train_deepsvdd', default=1, type=int, help='train (1) or load(0) deepsvdd')
+    parser.add_argument('--train_deepsvdd', default=1, type=int, help='train (1) or load (0) deepsvdd')
 
     parser.add_argument('--max_epoch_deepsvdd', default=1000, type=int, help='max epoch for training deepsvdd')
     parser.add_argument('--batch_size_deepsvdd', default=1024, type=int, help='batch size for training deepsvdd')
@@ -68,14 +68,16 @@ def main():
     parser.add_argument('--nu_deepsvdd', default=0.005, type=float, help='quantile for deepsvdd')
 
     # ADCAR
-    parser.add_argument('--train_ADCAR', default=1, type=int, help='train (1) or load(0) ADCAR')
-    parser.add_argument('--train_ADAR', default=1, type=int, help='train (1) or load(0) ADAR')
+    parser.add_argument('--train_ADCAR', default=1, type=int, help='train (1) or load (0) ADCAR')
+    parser.add_argument('--train_ADAR', default=1, type=int, help='train (1) or load (0) ADAR')
+    parser.add_argument('--train_ADCAR_RC', default=1, type=int, help='train (1) or load (0) ADCAR_RC')
     parser.add_argument('--cost_function', default=1, type=int, help='using cost function')
     parser.add_argument('--l2_alpha', default=1e-4, type=float, help='Weight for the l2 loss')
     parser.add_argument('--device', default='cuda:0', type=str, help='Device to use')
     parser.add_argument('--max_epoch_ADCAR', default=50, type=int, help='max epoch for training ADCAR')
     parser.add_argument('--batch_size_ADCAR', default=128, type=int, help='batch size for training ADCAR')
     parser.add_argument('--learning_rate_ADCAR', default=1e-5, type=float, help='Learning rate for ADCAR')
+    parser.add_argument('--rc_quantile', default=0.125, type=float, help='Abnormal quantile for root cause')
 
     parser.add_argument('--r_ratio', default=0.1, type=float, help='R ratio for flap samples')
 
@@ -155,6 +157,7 @@ def main():
 
     model_vaca = VACA(**model_params)
     model_vaca.set_random_train_sampler(data_module.get_random_train_sampler())
+
     assert model_vaca is not None
 
     utools.enablePrint()
@@ -182,14 +185,9 @@ def main():
 
     # %% Prepare training
     if args.yaml_file == '':
-        if (cfg['dataset']['name'] in [Cte.GERMAN]) and (cfg['dataset']['params3']['train_kfold'] == True):
-            save_dir = argtools.mkdir(os.path.join(cfg['root_dir'],
-                                                   argtools.get_experiment_folder(cfg),
-                                                   str(cfg['seed']), str(cfg['dataset']['params3']['kfold_idx'])))
-        else:
-            save_dir = argtools.mkdir(os.path.join(cfg['root_dir'],
-                                                   argtools.get_experiment_folder(cfg),
-                                                   str(cfg['seed'])))
+        save_dir = argtools.mkdir(os.path.join(cfg['root_dir'],
+                                               argtools.get_experiment_folder(cfg),
+                                               str(cfg['seed'])))
     else:
         save_dir = os.path.join(*args.yaml_file.split('/')[:-1])
     print(f'Save dir: {save_dir}')
@@ -326,7 +324,7 @@ def main():
         lst_dist, lst_pred = ad_model.predict(test_X, label=df_test['label'].values, result=1)
 
     if cfg['dataset']['name'] == 'loan':
-        out_dim = 6
+        out_dim = 4
     elif cfg['dataset']['name'] == 'adult':
         out_dim = 3
     elif cfg['dataset']['name'] == 'donors':
@@ -337,16 +335,21 @@ def main():
     for i in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]:
         print('-' * 50)
         print(f'Results for R = {i}')
+
+        x_train, u_train, x_valid, u_valid, x_test, u_test, df, rc_test = utils.prepare_adcar_training_data(df_test,
+                                                                                                            lst_pred,
+                                                                                                            test_rc,
+                                                                                                            data_module,
+                                                                                                            cfg[
+                                                                                                                'dataset'][
+                                                                                                                'name'])
+
         model_adar = adar.ADAR(input_dim, out_dim, ad_model, model_vaca, data_module,
                                alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
                                device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
                                # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
                                R_ratio=i, lr=args.learning_rate_ADCAR)
 
-        x_train, u_train, x_valid, u_valid, x_test, u_test, df = utils.prepare_adcar_training_data(df_test, lst_pred,
-                                                                                                   data_module,
-                                                                                                   cfg['dataset'][
-                                                                                                       'name'])
         if args.train_ADAR:
             print('Training ADAR:')
             model_adar.train_ADAR(x_train, u_train, x_valid, u_valid)
@@ -365,6 +368,26 @@ def main():
             model_adcar.train_ADCAR(x_train, u_train, x_valid, u_valid)
         print('Results for ADCAR:')
         model_adcar.predict(x_test, u_test, thres_n=thres_n)
+
+        print('-' * 50)
+        if cfg['dataset']['name'] == 'loan':
+            intervention_features = [3, 4, 5, 6]
+        elif cfg['dataset']['name'] == 'adult':
+            intervention_features = [1, 4, 5]
+        elif cfg['dataset']['name'] == 'donors':
+            intervention_features = [7, 8, 9]
+        else:
+            NotImplementedError
+
+        model_adcar_rc = adcar_rc.ADCAR_RC(cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
+                                           train_X, x_test, rc_test, rc_quantile=args.rc_quantile,
+                                           alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR,
+                                           max_epoch=args.max_epoch_ADCAR,
+                                           device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
+                                           # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
+                                           R_ratio=i, lr=args.learning_rate_ADCAR)
+        model_adcar_rc.train_ADCAR_RC(x_train, u_train, x_valid, u_valid)
+        model_adcar_rc.predict(x_test, u_test, thres_n=thres_n)
 
     print('done')
 

@@ -415,8 +415,8 @@ class VACA(pl.LightningModule):
 
     def get_changed(self, x, x_delta, data_module, likelihood_list, inverse=False, data='loan', device='cuda:0'):
         if data == 'loan':
-            intervened = {'x2':1, 'x3':2, 'x4':3, 'x5':4, 'x6':5, 'x7':6}
-            x_delta = F.pad(x_delta, (1,0,0,0))
+            intervened = {'x4':3, 'x5':4, 'x6':5, 'x7':6}
+            x_delta = F.pad(x_delta, (3,0,0,0))
             lst_cf = []
             for i in range(len(x)):
                 for key, value in intervened.items():
