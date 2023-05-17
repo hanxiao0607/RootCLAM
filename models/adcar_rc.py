@@ -138,7 +138,7 @@ class ADCAR_RC(object):
         elif self.data == 'donors':
             lst_prob = []
             for i in range(len(self.train_X)):
-                prob = self.model_vaca.get_distribution(self.train_X[i].reshape(1, -1).to(self.device), self.data_module,
+                prob = self.model_vaca.get_distribution(F.pad(self.train_X[i].reshape(1, -1), (0,1,0,0)).to(self.device), self.data_module,
                     device=self.device)
                 lst_prob.append(prob)
             lst_prob = np.array(lst_prob)

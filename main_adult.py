@@ -107,9 +107,7 @@ def main():
     if args.optim_dict is not None: cfg['optimizer']['params'].update(args.optim_dict)
     if args.trainer_dict is not None: cfg['trainer'].update(args.trainer_dict)
 
-    if isinstance(cfg['trainer']['gpus'], int):
-        cfg['trainer']['auto_select_gpus'] = False
-        cfg['trainer']['gpus'] = -1
+    cfg['trainer']['gpus'] = 1
 
     cfg['dataset']['params'] = cfg['dataset']['params1'].copy()
     cfg['dataset']['params'].update(cfg['dataset']['params2'])

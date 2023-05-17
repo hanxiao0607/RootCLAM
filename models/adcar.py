@@ -80,8 +80,8 @@ class ADCAR(object):
     def _get_scale(self):
         if self.data == 'loan':
             self.scale = (self.data_module.scaler.inverse_transform(
-                [[1.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0]]) - self.data_module.scaler.inverse_transform(
-                [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]))[0][1:].to(self.device)
+                [[1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0]]) - self.data_module.scaler.inverse_transform(
+                [[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]]))[0][3:].to(self.device)
         elif self.data == 'adult':
             lst_zeros = np.zeros(44)
             lst_1 = lst_zeros.copy()
