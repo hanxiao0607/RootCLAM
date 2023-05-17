@@ -361,65 +361,69 @@ def main():
     else:
         NotImplementedError
 
-    # for i in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]:
-    for i in [0.0, 0.3, 0.5]:
-        pl.seed_everything(cfg['seed'])
-        utils.set_seed(cfg['seed'])
-        print('-' * 50)
-        print(f'Results for R = {i}')
+    for i in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]:
+    # for i in [0.0, 0.3, 0.5]:
+        for j in [1, 1e-1, 1e-2, 1e-3, 5e-4, 1e-4, 1e-5]:
+            pl.seed_everything(cfg['seed'])
+            utils.set_seed(cfg['seed'])
+            print('-' * 50)
+            print(f'Results for R = {i}, alpha = {j}')
 
-        x_train, u_train, x_valid, u_valid, x_test, u_test, df, rc_test = utils.prepare_adcar_training_data(df_test,
-                                                                                                            lst_pred,
-                                                                                                            test_rc,
-                                                                                                            data_module,
-                                                                                                            cfg[
-                                                                                                                'dataset'][
-                                                                                                                'name'])
+            x_train, u_train, x_valid, u_valid, x_test, u_test, df, rc_test = utils.prepare_adcar_training_data(df_test,
+                                                                                                                lst_pred,
+                                                                                                                test_rc,
+                                                                                                                data_module,
+                                                                                                                cfg[
+                                                                                                                    'dataset'][
+                                                                                                                    'name'])
 
-        model_adar = adar.ADAR(input_dim, out_dim, ad_model, model_vaca, data_module,
-                               alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
-                               device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                               # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
-                               R_ratio=i, lr=args.learning_rate_ADCAR)
+            model_adar = adar.ADAR(input_dim, out_dim, ad_model, model_vaca, data_module,
+                                   # alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
+                                   alpha=j, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
+                                   device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
+                                   # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
+                                   R_ratio=i, lr=args.learning_rate_ADCAR)
 
-        if args.train_ADAR:
-            print('Training ADAR:')
-            model_adar.train_ADAR(x_train, u_train, x_valid, u_valid)
-        print('Results for ADAR:')
-        model_adar.predict(x_test, u_test, thres_n=thres_n)
+            if args.train_ADAR:
+                print('Training ADAR:')
+                model_adar.train_ADAR(x_train, u_train, x_valid, u_valid)
+            print('Results for ADAR:')
+            model_adar.predict(x_test, u_test, thres_n=thres_n)
 
-        print('-' * 50)
-        model_adcar = adcar.ADCAR(input_dim, out_dim, ad_model, model_vaca, data_module,
-                                  alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
-                                  device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                                  # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
-                                  R_ratio=i, lr=args.learning_rate_ADCAR)
+            print('-' * 50)
+            model_adcar = adcar.ADCAR(input_dim, out_dim, ad_model, model_vaca, data_module,
+                                      # alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
+                                      alpha=j, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
+                                      device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
+                                      # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
+                                      R_ratio=i, lr=args.learning_rate_ADCAR)
 
-        if args.train_ADCAR:
-            print('Training ADCAR:')
-            model_adcar.train_ADCAR(x_train, u_train, x_valid, u_valid)
-        print('Results for ADCAR:')
-        model_adcar.predict(x_test, u_test, thres_n=thres_n)
+            if args.train_ADCAR:
+                print('Training ADCAR:')
+                model_adcar.train_ADCAR(x_train, u_train, x_valid, u_valid)
+            print('Results for ADCAR:')
+            model_adcar.predict(x_test, u_test, thres_n=thres_n)
 
-        print('-' * 50)
-        if cfg['dataset']['name'] == 'loan':
-            intervention_features = [3, 4, 5, 6]
-        elif cfg['dataset']['name'] == 'adult':
-            intervention_features = [1, 4, 5]
-        elif cfg['dataset']['name'] == 'donors':
-            intervention_features = [7, 8, 9]
-        else:
-            NotImplementedError
+            print('-' * 50)
+            if cfg['dataset']['name'] == 'loan':
+                intervention_features = [3, 4, 5, 6]
+            elif cfg['dataset']['name'] == 'adult':
+                intervention_features = [1, 4, 5]
+            elif cfg['dataset']['name'] == 'donors':
+                intervention_features = [7, 8, 9]
+            else:
+                NotImplementedError
 
-        model_adcar_rc = adcar_rc.ADCAR_RC(cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
-                                           train_X, x_test, rc_test, rc_quantile=args.rc_quantile,
-                                           alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR,
-                                           max_epoch=args.max_epoch_ADCAR,
-                                           device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                                           # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
-                                           R_ratio=i, lr=args.learning_rate_ADCAR)
-        model_adcar_rc.train_ADCAR_RC(x_train, u_train, x_valid, u_valid)
-        model_adcar_rc.predict(x_test, u_test, thres_n=thres_n)
+            model_adcar_rc = adcar_rc.ADCAR_RC(cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
+                                               train_X, x_test, rc_test, rc_quantile=args.rc_quantile,
+                                               # alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR,
+                                               alpha=j, batch_size=args.batch_size_ADCAR,
+                                               max_epoch=args.max_epoch_ADCAR,
+                                               device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
+                                               # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
+                                               R_ratio=i, lr=args.learning_rate_ADCAR)
+            model_adcar_rc.train_ADCAR_RC(x_train, u_train, x_valid, u_valid)
+            model_adcar_rc.predict(x_test, u_test, thres_n=thres_n)
 
     print('done')
 
