@@ -418,7 +418,10 @@ def main():
                                                device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
                                                # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
                                                R_ratio=i, lr=args.learning_rate_ADCAR)
-            model_adcar_rc.train_ADCAR_RC(x_train, u_train, x_valid, u_valid)
+            if args.train_ADCAR_RC:
+                print('Training ADCAR_RC:')
+                model_adcar_rc.train_ADCAR_RC(x_train, u_train, x_valid, u_valid)
+            print('Results for ADCAR_RC:')
             model_adcar_rc.predict(x_test, u_test, thres_n=thres_n)
 
     print('done')
