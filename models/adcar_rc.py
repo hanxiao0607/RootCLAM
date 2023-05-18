@@ -145,7 +145,7 @@ class ADCAR_RC(object):
             self.prob_low = np.quantile(lst_prob, self.rc_quantile, axis=0)
             self.prob_high = np.quantile(lst_prob, (1 - self.rc_quantile), axis=0)
             for i in range(len(self.x_test)):
-                prob = self.model_vaca.get_distribution(self.x_test[i].reshape(1, -1).to(self.device), self.data_module,
+                prob = self.model_vaca.get_distribution(F.pad(self.x_test[i].reshape(1, -1), (0,1,0,0)).to(self.device), self.data_module,
                     device=self.device)
                 res = ((prob <= self.prob_high) == False).astype(int) + ((prob >= self.prob_low) == False).astype(int)
                 res = np.sum(res[0], axis=1)[:-1]
@@ -255,7 +255,6 @@ class ADCAR_RC(object):
             x_cf_hat = self.model_vaca.get_changed(org_x.clone(), output, self.data_module,
                                                    self.data_module.likelihood_list, inverse=False, data=self.data,
                                                    device=self.device)
-
             if self.cost_f:
                 l2_loss = self.loss_mse(output * self.scale, torch.zeros(output.size()).to(self.device))
             else:

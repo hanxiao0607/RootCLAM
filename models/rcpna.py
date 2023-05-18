@@ -57,7 +57,7 @@ class RCPNA(nn.Module):
         elif self.data_module.dataset_name == 'loan':
             self.input_dim = 7
         elif self.data_module.dataset_name == 'donors':
-            self.input_dim = 10
+            self.input_dim = 11
         else:
             NotImplementedError
 

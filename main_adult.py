@@ -40,7 +40,7 @@ def main():
     parser.add_argument('--data_dir', default='', type=str, help='data directory')
     parser.add_argument('--sample_seed', default=0, type=int, help='seed for sampling')
 
-    parser.add_argument('-i', '--is_training', default=1, type=int,
+    parser.add_argument('-i', '--is_training', default=0, type=int,
                         help='run with training (1) or without training (0)')
     parser.add_argument('--show_results', default=0, action="store_true",
                         help='run with evaluation (1) or without(0), default: 1')
@@ -52,7 +52,7 @@ def main():
 
     parser.add_argument('--training_size', default=10000, type=int, help='training size')
     # AutoEncoder
-    parser.add_argument('--train_autoencoder', default=1, type=int, help='train (1) or load(0) autoencoder')
+    parser.add_argument('--train_autoencoder', default=0, type=int, help='train (1) or load(0) autoencoder')
 
     parser.add_argument('--max_epoch_autoencoder', default=1000, type=int, help='max epoch for training autoencoder')
     parser.add_argument('--batch_size_autoencoder', default=1024, type=int, help='batch size for training autoencoder')
@@ -60,7 +60,7 @@ def main():
     parser.add_argument('--nu_autoencoder', default=0.005, type=float, help='quantile for autoencoder')
 
     # DeepSVDD
-    parser.add_argument('--train_deepsvdd', default=1, type=int, help='train (1) or load (0) deepsvdd')
+    parser.add_argument('--train_deepsvdd', default=0, type=int, help='train (1) or load (0) deepsvdd')
 
     parser.add_argument('--max_epoch_deepsvdd', default=1000, type=int, help='max epoch for training deepsvdd')
     parser.add_argument('--batch_size_deepsvdd', default=1024, type=int, help='batch size for training deepsvdd')
@@ -107,7 +107,8 @@ def main():
     if args.optim_dict is not None: cfg['optimizer']['params'].update(args.optim_dict)
     if args.trainer_dict is not None: cfg['trainer'].update(args.trainer_dict)
 
-    cfg['trainer']['gpus'] = 1
+    cfg['trainer']['auto_select_gpus'] = False
+    cfg['trainer']['gpus'] = 0
 
     cfg['dataset']['params'] = cfg['dataset']['params1'].copy()
     cfg['dataset']['params'].update(cfg['dataset']['params2'])
