@@ -68,8 +68,8 @@ def main():
     parser.add_argument('--nu_deepsvdd', default=0.005, type=float, help='quantile for deepsvdd')
 
     # ADCAR
-    parser.add_argument('--train_ADCAR', default=0, type=int, help='train (1) or load (0) ADCAR')
-    parser.add_argument('--train_ADAR', default=0, type=int, help='train (1) or load (0) ADAR')
+    parser.add_argument('--train_ADCAR', default=1, type=int, help='train (1) or load (0) ADCAR')
+    parser.add_argument('--train_ADAR', default=1, type=int, help='train (1) or load (0) ADAR')
     parser.add_argument('--train_ADCAR_RC', default=1, type=int, help='train (1) or load (0) ADCAR_RC')
     parser.add_argument('--cost_function', default=1, type=int, help='using cost function')
     parser.add_argument('--l2_alpha', default=1e-4, type=float, help='Weight for the l2 loss')

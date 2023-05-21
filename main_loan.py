@@ -3,6 +3,7 @@ import json
 import os
 import warnings
 import numpy as np
+import pandas as pd
 from utils import utils
 
 import pytorch_lightning as pl
@@ -77,7 +78,7 @@ def main():
     parser.add_argument('--max_epoch_ADCAR', default=100, type=int, help='max epoch for training ADCAR')
     parser.add_argument('--batch_size_ADCAR', default=128, type=int, help='batch size for training ADCAR')
     parser.add_argument('--learning_rate_ADCAR', default=1e-4, type=float, help='Learning rate for ADCAR')
-    parser.add_argument('--rc_quantile', default=0.125, type=float, help='Abnormal quantile for root cause')
+    parser.add_argument('--rc_quantile', default=0.100, type=float, help='Abnormal quantile for root cause')
 
     parser.add_argument('--r_ratio', default=0.0, type=float, help='R ratio for flap samples')
 
@@ -292,6 +293,7 @@ def main():
     df_test.to_csv('data/loan_test.csv')
     df_valid.to_csv('data/loan_valid.csv')
     df_train.to_csv('data/loan_train.csv')
+    pd.DataFrame(test_rc).to_csv('data/loan_test_rc.csv')
 
     if cfg['dataset']['name'] == 'loan':
         input_dim = data_module.train_dataset.X0.shape[-1]

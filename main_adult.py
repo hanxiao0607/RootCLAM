@@ -3,6 +3,7 @@ import json
 import os
 import warnings
 import numpy as np
+import pandas as pd
 from utils import utils
 
 import pytorch_lightning as pl
@@ -40,7 +41,7 @@ def main():
     parser.add_argument('--data_dir', default='', type=str, help='data directory')
     parser.add_argument('--sample_seed', default=0, type=int, help='seed for sampling')
 
-    parser.add_argument('-i', '--is_training', default=0, type=int,
+    parser.add_argument('-i', '--is_training', default=1, type=int,
                         help='run with training (1) or without training (0)')
     parser.add_argument('--show_results', default=0, action="store_true",
                         help='run with evaluation (1) or without(0), default: 1')
@@ -77,7 +78,7 @@ def main():
     parser.add_argument('--max_epoch_ADCAR', default=20, type=int, help='max epoch for training ADCAR')
     parser.add_argument('--batch_size_ADCAR', default=128, type=int, help='batch size for training ADCAR')
     parser.add_argument('--learning_rate_ADCAR', default=1e-4, type=float, help='Learning rate for ADCAR')
-    parser.add_argument('--rc_quantile', default=0.125, type=float, help='Abnormal quantile for root cause')
+    parser.add_argument('--rc_quantile', default=0.075, type=float, help='Abnormal quantile for root cause')
 
     parser.add_argument('--r_ratio', default=0.0, type=float, help='R ratio for flap samples')
 
@@ -296,6 +297,7 @@ def main():
     df_test.to_csv('data/adult_test.csv')
     df_valid.to_csv('data/adult_valid.csv')
     df_train.to_csv('data/adult_train.csv')
+    pd.DataFrame(test_rc).to_csv('data/adult_test_rc.csv')
 
     if cfg['dataset']['name'] == 'loan':
         input_dim = data_module.train_dataset.X0.shape[-1]
