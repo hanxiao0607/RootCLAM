@@ -72,7 +72,7 @@ class ADCAR_RC(object):
         self.ad_net.load_state_dict(self.ad_model.net.state_dict())
         if ad_model.name == 'deepsvdd':
             self.ad_c = self.ad_model.c.to(self.device)
-        self.param_name = f'{self.data}_{self.alpha}_{self.batch_size}_{self.max_epoch}_{self.intervention_features}_{self.cost_f}_{R_ratio}_{lr}'
+        self.param_name = f'{self.data}_{self.alpha}_{self.batch_size}_{self.max_epoch}_{self.intervention_features}_{self.cost_f}_{R_ratio}_{lr}_{self.rc_quantile}'
 
         self.R_ratio = R_ratio
 
@@ -451,7 +451,22 @@ class ADCAR_RC(object):
 
     def get_result(self, x, org_u):
         if self.data == 'loan':
-            x_changed = self.net.forward(x.to(self.device))
+            prob = self.model_vaca.get_distribution(x.reshape(1, -1).to(self.device),
+                                                    self.data_module,
+                                                    device=self.device)
+            res = ((prob <= self.prob_high) == False).astype(int) + (
+                    (prob >= self.prob_low) == False).astype(
+                int)
+            res = np.sum(res[0], axis=1)
+            res = np.where(res >= 1, 1, 0)
+            idx_interven = np.zeros(len(res))
+            for j in self.intervention_features:
+                idx_interven[j] += 1
+            res = res * idx_interven
+            if sum(res) == 0:
+                res = idx_interven.copy()
+            inter_features = np.where(res == 1)[0].astype(int)
+            x_changed = self.net.forward(x.reshape(1, -1).to(self.device), inter_features)[0]
             x_theta = (x_changed * self.scale).detach().cpu().numpy()
             x_cf_hat = self.model_vaca.get_changed(torch.unsqueeze(x, 0).to(self.device), torch.unsqueeze(x_changed, 0),
                                                    self.data_module, self.data_module.likelihood_list, inverse=False,
@@ -475,7 +490,23 @@ class ADCAR_RC(object):
             df['y'] = lst_y
 
         elif self.data == 'adult':
-            x_changed = self.net.forward(x.to(self.device))
+            prob = self.model_vaca.get_distribution(
+                F.pad(x.reshape(1, -1), (0, 4, 0, 0)).to(self.device), self.data_module,
+                device=self.device)
+            res = ((prob <= self.prob_high) == False).astype(int) + (
+                    (prob >= self.prob_low) == False).astype(
+                int)
+            res = np.sum(res[0], axis=1)[:-1]
+            res = np.where(res >= 1, 1, 0)
+            idx_interven = np.zeros(len(res))
+            for j in self.intervention_features:
+                idx_interven[j] += 1
+            res = res * idx_interven
+            if sum(res) == 0:
+                res = idx_interven.copy()
+            inter_features = np.where(res == 1)[0].astype(int)
+            x_changed = self.net.forward(F.pad(x.reshape(1, -1), (0, 4, 0, 0)).to(self.device),
+                                   inter_features)[0]
             x_theta = (x_changed * self.scale).detach().cpu().numpy()
             x_cf_hat = self.model_vaca.get_changed(torch.unsqueeze(x, 0).to(self.device), torch.unsqueeze(x_changed, 0),
                                                    self.data_module, self.data_module.likelihood_list, inverse=False,
@@ -517,7 +548,23 @@ class ADCAR_RC(object):
                                                                              relationship=df[
                                                                                  ['L_0', 'L_1', 'L_2']].values)
         elif self.data == 'donors':
-            x_changed = self.net.forward(x.to(self.device))
+            prob = self.model_vaca.get_distribution(
+                F.pad(x.reshape(1, -1), (0, 1, 0, 0)).to(self.device), self.data_module,
+                device=self.device)
+            res = ((prob <= self.prob_high) == False).astype(int) + (
+                    (prob >= self.prob_low) == False).astype(
+                int)
+            res = np.sum(res[0], axis=1)[:-1]
+            res = np.where(res >= 1, 1, 0)
+            idx_interven = np.zeros(len(res))
+            for j in self.intervention_features:
+                idx_interven[j] += 1
+            res = res * idx_interven
+            if sum(res) == 0:
+                res = idx_interven.copy()
+            inter_features = np.where(res == 1)[0].astype(int)
+            x_changed = self.net.forward(F.pad(x.reshape(1, -1), (0, 1, 0, 0)).to(self.device),
+                                   inter_features)[0]
             x_theta = (x_changed * self.scale).detach().cpu().numpy()
             x_cf_hat = self.model_vaca.get_changed(torch.unsqueeze(x, 0).to(self.device), torch.unsqueeze(x_changed, 0),
                                                    self.data_module, self.data_module.likelihood_list, inverse=False,
@@ -545,7 +592,7 @@ class ADCAR_RC(object):
             df['is_exciting'].loc[df['is_exciting'] == -1] = 1
         else:
             NotImplementedError
-        return x_theta, x_inverse, x_cf_hat_inverse, df
+        return x_theta, x_inverse, x_cf_hat_inverse, df, res
 
     def predict(self, test_x, test_u, thres_n=None):
         self.load_model()

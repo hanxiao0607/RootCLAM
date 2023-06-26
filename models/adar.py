@@ -263,7 +263,7 @@ class ADAR(object):
         if self.data == 'loan':
             x_changed = self.net.forward(x.to(self.device))
             x_theta = (x_changed * self.scale).detach().cpu().numpy()
-            x_cf_hat = F.pad(x_changed, (1, 0)).detach().cpu()
+            x_cf_hat = F.pad(x_changed, (3, 0)).detach().cpu()
             x_cf_hat += x
             x_cf_hat = x_cf_hat.numpy()
 

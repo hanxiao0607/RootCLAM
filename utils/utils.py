@@ -113,7 +113,7 @@ def split_dataset(data_module, lst_ab_data_module=None, name='loan', training_si
         size_train_n = training_size
         size_valid_n = int(training_size * 0.2)
         size_test_n = int(training_size * 1.0)
-        size_test_ab = int(size_test_n * 0.1)
+        size_test_ab = int(size_test_n * 1)
         portion_size_test_ab = int(size_test_ab / len(lst_ab_data_module))
 
         df_ab = pd.DataFrame()

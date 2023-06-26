@@ -77,7 +77,7 @@ def main():
     parser.add_argument('--max_epoch_ADCAR', default=50, type=int, help='max epoch for training ADCAR')
     parser.add_argument('--batch_size_ADCAR', default=128, type=int, help='batch size for training ADCAR')
     parser.add_argument('--learning_rate_ADCAR', default=1e-5, type=float, help='Learning rate for ADCAR')
-    parser.add_argument('--rc_quantile', default=0.125, type=float, help='Abnormal quantile for root cause')
+    parser.add_argument('--rc_quantile', default=0.100, type=float, help='Abnormal quantile for root cause')
 
     parser.add_argument('--r_ratio', default=0.1, type=float, help='R ratio for flap samples')
 
