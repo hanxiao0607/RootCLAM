@@ -2,7 +2,7 @@
 <module type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="RootCLAM_env" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Remote Python 3.9.7 (sftp://xiaohan@129.123.29.152:22/home/xiaohan/anaconda3/envs/vaca/bin/python3.9)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PackageRequirementsSettings">
