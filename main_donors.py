@@ -12,7 +12,7 @@ from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
 import utils.args_parser as argtools
 import utils.tools as utools
 from utils.constants import Cte
-from models import deepsvdd, adcar, adar, ae, adcar_rc
+from models import deepsvdd, naiveam, ae, rootclam
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -40,9 +40,9 @@ def main():
     parser.add_argument('--data_dir', default='', type=str, help='data directory')
     parser.add_argument('--sample_seed', default=0, type=int, help='seed for sampling')
 
-    parser.add_argument('-i', '--is_training', default=0, type=int,
+    parser.add_argument('-i', '--is_training', default=1, type=int,
                         help='run with training (1) or without training (0)')
-    parser.add_argument('--show_results', default=0, action="store_true",
+    parser.add_argument('--show_results', default=1, action="store_true",
                         help='run with evaluation (1) or without(0), default: 1')
 
     parser.add_argument('--plots', default=0, type=int, help='run code with plotting (1) or without (0), default: 0')
@@ -52,7 +52,7 @@ def main():
 
     parser.add_argument('--training_size', default=10000, type=int, help='training size')
     # AutoEncoder
-    parser.add_argument('--train_autoencoder', default=0, type=int, help='train (1) or load(0) autoencoder')
+    parser.add_argument('--train_autoencoder', default=1, type=int, help='train (1) or load(0) autoencoder')
 
     parser.add_argument('--max_epoch_autoencoder', default=1000, type=int, help='max epoch for training autoencoder')
     parser.add_argument('--batch_size_autoencoder', default=1024, type=int, help='batch size for training autoencoder')
@@ -60,23 +60,22 @@ def main():
     parser.add_argument('--nu_autoencoder', default=0.005, type=float, help='quantile for autoencoder')
 
     # DeepSVDD
-    parser.add_argument('--train_deepsvdd', default=0, type=int, help='train (1) or load (0) deepsvdd')
+    parser.add_argument('--train_deepsvdd', default=1, type=int, help='train (1) or load (0) deepsvdd')
 
     parser.add_argument('--max_epoch_deepsvdd', default=1000, type=int, help='max epoch for training deepsvdd')
     parser.add_argument('--batch_size_deepsvdd', default=1024, type=int, help='batch size for training deepsvdd')
     parser.add_argument('--out_dim_deepsvdd', default=32, type=int, help='output dim for deepsvdd')
     parser.add_argument('--nu_deepsvdd', default=0.005, type=float, help='quantile for deepsvdd')
 
-    # ADCAR
-    parser.add_argument('--train_ADCAR', default=1, type=int, help='train (1) or load (0) ADCAR')
-    parser.add_argument('--train_ADAR', default=1, type=int, help='train (1) or load (0) ADAR')
-    parser.add_argument('--train_ADCAR_RC', default=1, type=int, help='train (1) or load (0) ADCAR_RC')
+    # RootCLAM
+    parser.add_argument('--train_NaiveAM', default=1, type=int, help='train (1) or load (0) NaiveAM')
+    parser.add_argument('--train_RootCLAM', default=1, type=int, help='train (1) or load (0) RootCLAM')
     parser.add_argument('--cost_function', default=1, type=int, help='using cost function')
     parser.add_argument('--l2_alpha', default=1e-4, type=float, help='Weight for the l2 loss')
     parser.add_argument('--device', default='cuda:0', type=str, help='Device to use')
-    parser.add_argument('--max_epoch_ADCAR', default=50, type=int, help='max epoch for training ADCAR')
-    parser.add_argument('--batch_size_ADCAR', default=128, type=int, help='batch size for training ADCAR')
-    parser.add_argument('--learning_rate_ADCAR', default=1e-5, type=float, help='Learning rate for ADCAR')
+    parser.add_argument('--max_epoch_RootCLAM', default=50, type=int, help='max epoch for training RootCLAM')
+    parser.add_argument('--batch_size_RootCLAM', default=128, type=int, help='batch size for training RootCLAM')
+    parser.add_argument('--learning_rate_RootCLAM', default=1e-5, type=float, help='Learning rate for RootCLAM')
     parser.add_argument('--rc_quantile', default=0.100, type=float, help='Abnormal quantile for root cause')
 
     parser.add_argument('--r_ratio', default=0.1, type=float, help='R ratio for flap samples')
@@ -331,72 +330,50 @@ def main():
     else:
         NotImplementedError
 
-    for i in [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]:
-    # for i in [0.0, 0.3, 0.5]:
-        for j in [1, 1e-1, 1e-2, 1e-3, 5e-4, 1e-4, 1e-5]:
-            pl.seed_everything(cfg['seed'])
-            utils.set_seed(cfg['seed'])
-            print('-' * 50)
-            print(f'Results for R = {i}, alpha = {j}')
+    pl.seed_everything(cfg['seed'])
+    utils.set_seed(cfg['seed'])
+    print('-' * 50)
 
-            x_train, u_train, x_valid, u_valid, x_test, u_test, df, rc_test = utils.prepare_adcar_training_data(df_test,
-                                                                                                                lst_pred,
-                                                                                                                test_rc,
-                                                                                                                data_module,
-                                                                                                                cfg[
-                                                                                                                    'dataset'][
-                                                                                                                    'name'])
+    x_train, u_train, x_valid, u_valid, x_test, u_test, df, rc_test = utils.prepare_rootclam_training_data(df_test,
+                                                                                                        lst_pred,
+                                                                                                        test_rc,
+                                                                                                        data_module,
+                                                                                                        cfg[
+                                                                                                            'dataset'][
+                                                                                                            'name'])
 
-            model_adar = adar.ADAR(input_dim, out_dim, ad_model, model_vaca, data_module,
-                                   # alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
-                                   alpha=j, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
-                                   device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                                   # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
-                                   R_ratio=i, lr=args.learning_rate_ADCAR)
+    model_naiveam = naiveam.NaiveAM(input_dim, out_dim, ad_model, model_vaca, data_module,
+                           alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM, max_epoch=args.max_epoch_RootCLAM,
+                           device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
+                           R_ratio=args.r_ratio, lr=args.learning_rate_RootCLAM)
 
-            if args.train_ADAR:
-                print('Training ADAR:')
-                model_adar.train_ADAR(x_train, u_train, x_valid, u_valid)
-            print('Results for ADAR:')
-            model_adar.predict(x_test, u_test, thres_n=thres_n)
+    if args.train_NaiveAM:
+        print('Training NaiveAM:')
+        model_naiveam.train_NaiveAM(x_train, u_train, x_valid, u_valid)
+    print('Results for NaiveAM:')
+    model_naiveam.predict(x_test, u_test, thres_n=thres_n)
 
-            print('-' * 50)
-            model_adcar = adcar.ADCAR(input_dim, out_dim, ad_model, model_vaca, data_module,
-                                      # alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
-                                      alpha=j, batch_size=args.batch_size_ADCAR, max_epoch=args.max_epoch_ADCAR,
-                                      device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                                      # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
-                                      R_ratio=i, lr=args.learning_rate_ADCAR)
+    print('-' * 50)
+    if cfg['dataset']['name'] == 'loan':
+        intervention_features = [3, 4, 5, 6]
+    elif cfg['dataset']['name'] == 'adult':
+        intervention_features = [1, 4, 5]
+    elif cfg['dataset']['name'] == 'donors':
+        intervention_features = [7, 8, 9]
+    else:
+        NotImplementedError
 
-            if args.train_ADCAR:
-                print('Training ADCAR:')
-                model_adcar.train_ADCAR(x_train, u_train, x_valid, u_valid)
-            print('Results for ADCAR:')
-            model_adcar.predict(x_test, u_test, thres_n=thres_n)
-
-            print('-' * 50)
-            if cfg['dataset']['name'] == 'loan':
-                intervention_features = [3, 4, 5, 6]
-            elif cfg['dataset']['name'] == 'adult':
-                intervention_features = [1, 4, 5]
-            elif cfg['dataset']['name'] == 'donors':
-                intervention_features = [7, 8, 9]
-            else:
-                NotImplementedError
-
-            model_adcar_rc = adcar_rc.ADCAR_RC(cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
-                                               train_X, x_test, rc_test, rc_quantile=args.rc_quantile,
-                                               # alpha=args.l2_alpha, batch_size=args.batch_size_ADCAR,
-                                               alpha=j, batch_size=args.batch_size_ADCAR,
-                                               max_epoch=args.max_epoch_ADCAR,
-                                               device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                                               # R_ratio=args.r_ratio, lr=args.learning_rate_ADCAR)
-                                               R_ratio=i, lr=args.learning_rate_ADCAR)
-            if args.train_ADCAR_RC:
-                print('Training ADCAR_RC:')
-                model_adcar_rc.train_ADCAR_RC(x_train, u_train, x_valid, u_valid)
-            print('Results for ADCAR_RC:')
-            model_adcar_rc.predict(x_test, u_test, thres_n=thres_n)
+    model_rootclam = rootclam.RootCLAM(cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
+                                       train_X, x_test, rc_test, rc_quantile=args.rc_quantile,
+                                       alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM,
+                                       max_epoch=args.max_epoch_RootCLAM,
+                                       device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
+                                       R_ratio=args.r_ratio, lr=args.learning_rate_RootCLAM)
+    if args.train_RootCLAM:
+        print('Training RootCLAM:')
+        model_rootclam.train_RootCLAM(x_train, u_train, x_valid, u_valid)
+    print('Results for RootCLAM:')
+    model_rootclam.predict(x_test, u_test, thres_n=thres_n)
 
     print('done')
 

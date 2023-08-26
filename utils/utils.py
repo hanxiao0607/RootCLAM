@@ -214,7 +214,7 @@ def get_summed_xGT(data_module, org_u, delta_u, data='loan'):
         NotImplementedError
 
 
-def prepare_adcar_training_data(df, y_pred, test_rc, data_module, data='loan'):
+def prepare_rootclam_training_data(df, y_pred, test_rc, data_module, data='loan'):
     if data == 'loan':
         df['pred'] = y_pred
         df['rc'] = 0

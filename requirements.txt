@@ -1,13 +1,13 @@
 PyYAML~=6.0
-numpy~=1.22.2
+numpy~=1.24.3
 matplotlib~=3.5.0
-scipy~=1.8.0
-torch~=1.9.0
-networkx~=2.6.3
+scipy~=1.10.1
+torch~=1.9.0+cu111
+networkx~=2.8.8
 scikit-learn~=1.0.2
 torchvision~=0.10.0
-pandas~=1.4.1
+pandas~=1.5.3
 seaborn~=0.11.2
-tqdm~=4.64.1
+tqdm~=4.65.0
 
 

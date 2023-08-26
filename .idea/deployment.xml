@@ -1,37 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="3090 VACA" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false" autoUploadExternalChanges="true">
+  <component name="PublishConfigData" autoUpload="Always" serverName="RootCLAM" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false" autoUploadExternalChanges="true" showAutoUploadSettingsWarning="false">
     <option name="confirmBeforeUploading" value="false" />
-    <serverData>
-      <paths name="2080">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/ADCAR_rc" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="2080 VACA">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/ADCAR_rc" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="3090">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/ADCAR_rc" local="$PROJECT_DIR$" web="/" />
-          </mappings>
-        </serverdata>
-      </paths>
-      <paths name="3090 VACA">
-        <serverdata>
-          <mappings>
-            <mapping deploy="/ADCAR_rc" local="$PROJECT_DIR$" />
-          </mappings>
-        </serverdata>
-      </paths>
-    </serverData>
     <option name="myAutoUpload" value="ALWAYS" />
   </component>
 </project>
