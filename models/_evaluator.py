@@ -20,7 +20,8 @@ class MyEvaluator:
     def __init__(self, model,
                  intervention_list,
                  scaler,
-                 normalize=True):
+                 normalize=True,
+                 device='cpu'):
         self.model = model
         self.logger = None
         self.mmd1 = MMDLoss(kernel_mul=2.0, kernel_num=5, num_samples=1000)
@@ -29,6 +30,7 @@ class MyEvaluator:
         self.current_epoch = None
         self.scaler = scaler
         self.normalize = normalize
+        self.device = device
 
         return
 
@@ -58,7 +60,8 @@ class MyEvaluator:
                 max_[max_ == 0] = 1.
                 x_obs = x_obs / max_
                 x_obs_gener = x_obs_gener / max_
-
+            x_obs = x_obs.to(self.device)
+            x_obs_gener = x_obs_gener.to(self.device)
             mse_mean = (x_obs.mean(0) - x_obs_gener.mean(0)) ** 2
             mse_std = (x_obs.std(0) - x_obs_gener.std(0)) ** 2
             diff_std = x_obs.std(0) - x_obs_gener.std(0)
@@ -143,8 +146,6 @@ class MyEvaluator:
                                           name=f'inter_{label}_{key}')
                 else:  # no ground truth
                     pass
-                    # self.logs_observation(x_obs=X_real_dict, x_obs_gener=value, mode=name,
-                    #                       name=f'inter_{label}_{key}')
 
             X_gener_dict, X_real_dict, _ = self.model.get_counterfactual_distr(data_loader, x_I=x_I, is_noise=True)
 

@@ -117,9 +117,9 @@ class AutoEncoder(object):
 
         best_eval_loss = float('inf')
 
-        for epoch in tqdm(range(self.max_epoch)):
+        for _ in tqdm(range(self.max_epoch)):
             train_loss = self._train(train_iter)
-            print(f'Training loss: {train_loss}')
+            # print(f'Training loss: {train_loss}')
             eval_loss, lst_dist = self._evaluate(eval_iter)
 
             if eval_loss < best_eval_loss:

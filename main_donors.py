@@ -61,7 +61,7 @@ def main():
     model_naiveam = naiveam.NaiveAM(input_dim, out_dim, ad_model, model_vaca, data_module,
                            alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM, max_epoch=args.max_epoch_RootCLAM,
                            device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                           R_ratio=args.r_ratio, lr=args.learning_rate_RootCLAM)
+                           R_ratio=args.r_ratio, lr=args.learning_rate_RootCLAM, print_all=args.print_all)
 
     if args.train_NaiveAM:
         print('Training NaiveAM:')
@@ -84,7 +84,7 @@ def main():
                                        alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM,
                                        max_epoch=args.max_epoch_RootCLAM,
                                        device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                                       R_ratio=args.r_ratio, lr=args.learning_rate_RootCLAM)
+                                       R_ratio=args.r_ratio, lr=args.learning_rate_RootCLAM, print_all=args.print_all)
     if args.train_RootCLAM:
         print('Training RootCLAM:')
         model_rootclam.train_RootCLAM(x_train, u_train, x_valid, u_valid)

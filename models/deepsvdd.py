@@ -125,7 +125,7 @@ class DeepSVDD(object):
             if epoch > 9:
                 center = fixed_center
             train_loss = self._train(train_iter, center)
-            print(f'Training loss: {train_loss}')
+            # print(f'Training loss: {train_loss}')
             eval_loss, center, lst_dist = self._evaluate(eval_iter, center, epoch)
 
             if epoch == 9:

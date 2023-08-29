@@ -52,6 +52,7 @@ class HeterogeneousDistribution:
             if self.likelihood_name_list[i] in [Cte.CATEGORICAL]:
                 sample_i = distr.sample(sample_shape)
                 y_onehot = torch.FloatTensor(distr.probs.shape)
+                y_onehot = y_onehot.to(sample_i.device)
                 # In your for loop
                 y_onehot.zero_()
                 y_onehot.scatter_(1, sample_i.view(-1, 1), 1)

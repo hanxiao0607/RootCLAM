@@ -141,6 +141,7 @@ class VACA(pl.LightningModule):
     @torch.no_grad()
     def samples_aggregated_posterior(self, num_samples):
         batch = self.random_train_sampler(num_samples)
+        batch = batch.to(self.device)
         q_z_x = self.model.encoder(batch.x, batch.edge_index, edge_attr=batch.edge_attr,
                                    return_mean=False, node_ids=batch.node_ids)
         return q_z_x.sample()
@@ -171,7 +172,6 @@ class VACA(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         batch = batch.to(self.device)
-
         if self.dropout_adj > 0.0 and self.current_epoch >= self.dropout_adj_T:
             batch = batch.clone()
             batch.edge_index, batch.edge_attr = dropout_adj(batch.edge_index, batch.edge_attr,
@@ -284,6 +284,7 @@ class VACA(pl.LightningModule):
 
         metrics = {'elbo': [], f'iwae_{K}': []}
         for idx, batch in enumerate(iter(data_loader)):
+            batch = batch.to(self.device)
             objective, data = self.model(batch, estimator='elbo', beta=1)
             metrics['elbo'].append(objective.item())
             log_w = self.compute_log_w(batch, K=K)
@@ -366,7 +367,6 @@ class VACA(pl.LightningModule):
                 z = self.samples_aggregated_posterior(num_samples=batch.num_graphs).to(self.device)
             else:
                 z = self.model.z_prior_distr.sample([batch.num_nodes]).to(self.device)
-
             x_hat, _ = self.model.decoder(z, batch.edge_index, edge_attr=batch.edge_attr,
                                           return_type='sample', node_ids=batch.node_ids)
             if normalize:
@@ -596,6 +596,7 @@ class VACA(pl.LightningModule):
 
         for idx, batch in enumerate(iterator):
             if isinstance(num_batches, int) and idx > num_batches: break
+            batch = batch.to(self.device)
             if use_aggregated_posterior:
                 z = self.samples_aggregated_posterior(num_samples=batch.num_graphs).to(self.device)
             else:
@@ -650,6 +651,7 @@ class VACA(pl.LightningModule):
 
     @torch.no_grad()
     def compute_counterfactual(self, batch, x_I, z_I):
+        batch = batch.to(self.device)
         z_factual, _ = self.model.encoder(batch.x, batch.edge_index, edge_attr=batch.edge_attr,
                                           return_mean=True, node_ids=batch.node_ids)
 
@@ -698,6 +700,7 @@ class VACA(pl.LightningModule):
 
         for idx, batch in enumerate(iterator):
             if isinstance(num_batches, int) and idx > num_batches: break
+            batch = batch.to(self.device)
             # Encoder pass 1 with Factual
             z_factual, _ = self.model.encoder(batch.x, batch.edge_index, edge_attr=batch.edge_attr,
                                               return_mean=True, node_ids=batch.node_ids)
@@ -730,8 +733,8 @@ class VACA(pl.LightningModule):
             else:
                 x_CF = self.scaler.inverse_transform(x_CF.view(batch.num_graphs, -1))
 
+            batch = batch.to('cpu')
             u_factual = batch.u.view(batch.num_graphs, -1)
-
             x_cf_real, set_nodes = data_loader.dataset.get_counterfactual(
                 x_factual=self.scaler.inverse_transform(self.get_x_graph(batch, 'x')),
                 u_factual=u_factual,
@@ -786,6 +789,7 @@ class VACA(pl.LightningModule):
         self.eval()
         x = []
         for idx, batch in enumerate(iterator):
+            batch = batch.to(self.device)
             x.append(self.get_x_graph(batch, 'x'))
         return torch.cat(x)
 
@@ -816,6 +820,7 @@ class VACA(pl.LightningModule):
         x_real = []
         for idx, batch in enumerate(iterator):
             if isinstance(num_batches, int) and idx > num_batches: break
+            batch = batch.to(self.device)
             z_hat, x_hat = self.model.reconstruct(batch)
 
             if normalize:
@@ -836,6 +841,7 @@ class VACA(pl.LightningModule):
         self.eval()
         x = []
         for idx, batch in enumerate(iterator):
+            batch = batch.to(self.device)
             x.append(batch.x.view(batch.num_graphs, -1))
 
         return torch.cat(x)

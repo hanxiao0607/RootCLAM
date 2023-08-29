@@ -35,7 +35,7 @@ class RootCLAM(object):
 
     def __init__(self, cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
                  train_X, x_test, test_rc, rc_quantile=0.01, alpha=1, batch_size=64,
-                 max_epoch=50, device='cuda:0', data='loan', cost_f=True, R_ratio=0.1, lr=1e-4):
+                 max_epoch=50, device='cuda:0', data='loan', cost_f=True, R_ratio=0.1, lr=1e-4, print_all=False):
         super().__init__()
 
         self.input_dim = input_dim
@@ -54,6 +54,7 @@ class RootCLAM(object):
         self.x_test = x_test
         self.test_rc = test_rc
         self.rc_quantile = rc_quantile
+        self.print_all = print_all
         if cost_f:
             self.cost_f = True
         else:
@@ -439,12 +440,13 @@ class RootCLAM(object):
                 lst_dist_gt = dists_loss_gt.detach().cpu().numpy()
                 lst_pred_gt.extend(list(np.where(lst_dist_gt < self.ad_model.R, 0, 1)))
 
-            if self.data != 'donors':
-                print(f'Reconstruction MSE norm: {recon_mse_norm / len(iterator)}')
-                print(f'Reconstruction MSE orig: {recon_err_orig / len(iterator)}')
-                print(f'Reconstruction SSE norm: {recon_sse_norm / len(iterator)}')
-                print(f'Reconstruction SSE orig: {recon_sse_orig / len(iterator)}')
-            print(epoch_loss)
+            if self.print_all:
+                if self.data != 'donors':
+                    print(f'Reconstruction MSE norm: {recon_mse_norm / len(iterator)}')
+                    print(f'Reconstruction MSE orig: {recon_err_orig / len(iterator)}')
+                    print(f'Reconstruction SSE norm: {recon_sse_norm / len(iterator)}')
+                    print(f'Reconstruction SSE orig: {recon_sse_orig / len(iterator)}')
+                print(epoch_loss)
 
         return epoch_loss / len(iterator), lst_pred_vaca, np.array(lst_x_vaca), lst_pred_gt, np.array(
             lst_x_gt), lst_changes

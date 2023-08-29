@@ -492,28 +492,9 @@ def prepare_vaca(args, cfg, data_module):
     model_parameters = filter(lambda p: p.requires_grad, model_vaca.parameters())
     params = int(sum([np.prod(p.size()) for p in model_parameters]))
 
-    print(f'Model parameters: {params}')
     model_vaca.eval()
     model_vaca.freeze()  # IMPORTANT
 
-    if args.show_results:
-        output_valid = model_vaca.evaluate(dataloader=data_module.val_dataloader(),
-                                           name='valid',
-                                           save_dir=save_dir,
-                                           plots=False)
-        output_test = model_vaca.evaluate(dataloader=data_module.test_dataloader(),
-                                          name='test',
-                                          save_dir=save_dir,
-                                          plots=args.plots)
-        output_valid.update(output_test)
-
-        output_valid.update(argtools.flatten_cfg(cfg))
-        output_valid.update({'ckpt_file': ckpt_file,
-                             'num_parameters': params})
-
-        with open(os.path.join(save_dir, 'output.json'), 'w') as f:
-            json.dump(output_valid, f)
-        print(f'Experiment folder: {save_dir}')
     return model_vaca
 
 def prepare_ad_model(args, cfg, data_module, df_test):
@@ -580,3 +561,18 @@ def prepare_ad_model(args, cfg, data_module, df_test):
     else:
         NotImplementedError
     return ad_model, lst_pred, input_dim, out_dim, train_X
+
+def set_intervention_features(cfg):
+    intervention_features = None
+    if cfg['dataset']['name'] == 'loan':
+        intervention_features = [3, 4, 5, 6]
+    elif cfg['dataset']['name'] == 'adult':
+        intervention_features = [1, 4, 5]
+    elif cfg['dataset']['name'] == 'donors':
+        intervention_features = [7, 8, 9]
+    else:
+        NotImplementedError
+    if intervention_features is None:
+        print('No intervention features!')
+        raise NotImplementedError
+    return intervention_features

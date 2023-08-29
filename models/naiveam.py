@@ -31,7 +31,7 @@ class PointDataset(Dataset):
 class NaiveAM(object):
 
     def __init__(self, input_dim, out_dim, ad_model, model_vaca, data_module, alpha=1, batch_size=64,
-                 max_epoch=50, device='cuda:0', data='loan', cost_f=True, R_ratio=0.1, lr=1e-4):
+                 max_epoch=50, device='cuda:0', data='loan', cost_f=True, R_ratio=0.1, lr=1e-4, print_all=False):
         super().__init__()
 
         self.input_dim = input_dim
@@ -44,6 +44,7 @@ class NaiveAM(object):
         self.model_vaca = model_vaca.to(device)
         self.alpha = alpha
         self.data_module = data_module
+        self.print_all = print_all
         if cost_f:
             self.cost_f = True
         else:
@@ -144,8 +145,8 @@ class NaiveAM(object):
             epoch_loss += loss.item()
             epoch_dist_loss += total_dists_loss.item()
             epoch_l2_loss += l2_loss.item()
-        print(f'Epoch loss: {epoch_loss / len(iterator)}, epoch dist loss: {epoch_dist_loss / len(iterator)}, '
-              f'epoch l2 loss: {epoch_l2_loss / len(iterator)}')
+        # print(f'Epoch loss: {epoch_loss / len(iterator)}, epoch dist loss: {epoch_dist_loss / len(iterator)}, '
+        #       f'epoch l2 loss: {epoch_l2_loss / len(iterator)}')
 
         return epoch_loss / len(iterator)
 
@@ -253,8 +254,10 @@ class NaiveAM(object):
                     dists_loss_vaca = ((self.ad_model.net.forward(x_cf_hat_vaca) - x_cf_hat_vaca) ** 2).sum(axis=1)
                 lst_dist_vaca = dists_loss_vaca.detach().cpu().numpy()
                 lst_pred_vaca.extend(list(np.where(lst_dist_vaca < self.ad_model.R, 0, 1)))
-            if self.data != 'donors':
-                print(f'Reconstruction error: {recon_err / len(iterator)}')
+            if self.print_all:
+                if self.data != 'donors':
+                    print(f'Reconstruction error: {recon_err / len(iterator)}')
+                pass
 
         return epoch_loss / len(iterator), lst_pred, np.array(lst_x), lst_pred_gt, np.array(
             lst_x_gt), lst_pred_vaca, np.array(lst_x_vaca)

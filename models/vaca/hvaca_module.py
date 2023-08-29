@@ -291,7 +291,8 @@ class HVACAModule(nn.Module):
 
             log_prob_x = px_z.log_prob(self.get_x_graph(data, 'x')).sum(1).mean()
             kl_z = torch.distributions.kl.kl_divergence(qz_x, self.z_prior_distr).view(data.num_graphs, -1).sum(
-                1).mean()
+                        1).mean()
+
 
             elbo = log_prob_x - beta * kl_z
 
