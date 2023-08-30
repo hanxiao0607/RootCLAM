@@ -21,10 +21,10 @@ def get_args():
                         help='manually define optimizer configurations as string: KEY1=VALUE1+KEY2=VALUE2+...')
     parser.add_argument('-t', '--trainer_dict', action=argtools.StoreDictKeyPair, metavar="KEY1=VAL1,KEY2=VAL2...",
                         help='manually define trainer configurations as string: KEY1=VALUE1+KEY2=VALUE2+...')
-    parser.add_argument('-s', '--seed', default=0, type=int, help='set random seed, default: random')
+    parser.add_argument('-s', '--seed', default=1, type=int, help='set random seed, default: random')
     parser.add_argument('-r', '--root_dir', default='', type=str, help='directory for storing results')
     parser.add_argument('--data_dir', default='', type=str, help='data directory')
-    parser.add_argument('--sample_seed', default=0, type=int, help='seed for sampling')
+    parser.add_argument('--sample_seed', default=1, type=int, help='seed for sampling')
     parser.add_argument('-i', '--is_training', default=1, type=int,
                         help='run with training (1) or without training (0)')
     parser.add_argument('--show_results', default=1, action="store_true",

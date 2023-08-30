@@ -33,7 +33,13 @@ Clone the template project, replacing ``my-project`` with the name of the projec
 
 Run and test:
 
-        python3 main.py
+        python3 main.py DATASET_NAME AD_MODEL_NAME
+
+where DATASET_NAME can be adult, loan, or donors, and AD_MODEL_NAME can be ae or deepsvdd.
+
+Eample:
+
+        python3 main.py adult ae
 
 ## Citation
 ```

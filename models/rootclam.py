@@ -277,8 +277,9 @@ class RootCLAM(object):
             epoch_loss += loss.item()
             epoch_dist_loss += total_dists_loss.item()
             epoch_l2_loss += l2_loss.item()
-        print(f'Epoch loss: {epoch_loss / len(iterator)}, epoch dist loss: {epoch_dist_loss / len(iterator)}, '
-              f'epoch l2 loss: {epoch_l2_loss / len(iterator)}')
+        if self.print_all:
+            print(f'Epoch loss: {epoch_loss / len(iterator)}, epoch dist loss: {epoch_dist_loss / len(iterator)}, '
+                  f'epoch l2 loss: {epoch_l2_loss / len(iterator)}')
 
         return epoch_loss / len(iterator)
 

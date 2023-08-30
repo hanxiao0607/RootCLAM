@@ -593,7 +593,8 @@ class NaiveAM(object):
 
             train_loss = self._train(train_iter)
             eval_loss, _, _, _, _, _, _ = self._evaluate(eval_iter)
-            # print(f'Training loss: {train_loss}, Evaluation loss {eval_loss}')
+            if self.print_all:
+                print(f'Training loss: {train_loss}, Evaluation loss {eval_loss}')
             if eval_loss < best_eval_loss:
                 best_eval_loss = eval_loss
                 torch.save(self.net.state_dict(), f'./saved_models/NaiveAM_{self.param_name}.pt')
