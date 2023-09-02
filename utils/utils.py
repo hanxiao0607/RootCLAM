@@ -371,7 +371,7 @@ def prepare_dataset(args, cfg, dataset_name):
             for i in Cte.ADULT_AB_LIST:
                 dataset_params = cfg['dataset']['params'].copy()
                 dataset_params['dataset_name'] = i
-                dataset_params['num_samples_tr'] = args.training_size * 10
+                dataset_params['num_samples_tr'] = args.training_size * 15
 
                 data_module_ab = HeterogeneousSCMDataModule(**dataset_params)
 
@@ -382,7 +382,7 @@ def prepare_dataset(args, cfg, dataset_name):
             for i in Cte.LOAN_AB_LIST:
                 dataset_params = cfg['dataset']['params'].copy()
                 dataset_params['dataset_name'] = i
-                dataset_params['num_samples_tr'] = args.training_size * 10
+                dataset_params['num_samples_tr'] = args.training_size * 15
 
                 data_module_ab = HeterogeneousSCMDataModule(**dataset_params)
 

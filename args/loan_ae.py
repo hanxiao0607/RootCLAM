@@ -52,7 +52,7 @@ def get_args():
     parser.add_argument('--train_NaiveAM', default=1, type=int, help='train (1) or load (0) NaiveAM')
     parser.add_argument('--train_RootCLAM', default=1, type=int, help='train (1) or load (0) RootCLAM')
     parser.add_argument('--cost_function', default=1, type=int, help='using cost function')
-    parser.add_argument('--l2_alpha', default=1e-5, type=float, help='Weight for the l2 loss')
+    parser.add_argument('--l2_alpha', default=1e-3, type=float, help='Weight for the l2 loss')
     parser.add_argument('--device', default='cuda:0', type=str, help='Device to use')
     parser.add_argument('--max_epoch_RootCLAM', default=100, type=int, help='max epoch for training RootCLAM')
     parser.add_argument('--batch_size_RootCLAM', default=128, type=int, help='batch size for training RootCLAM')
