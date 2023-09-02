@@ -69,17 +69,10 @@ def main():
         model_naiveam.train_NaiveAM(x_train, u_train, x_valid, u_valid)
     print('Results for NaiveAM:')
     model_naiveam.predict(x_test, u_test, thres_n=thres_n)
-    # initial RootCLAM
     print('-' * 50)
-    if cfg['dataset']['name'] == 'loan':
-        intervention_features = [3, 4, 5, 6]
-    elif cfg['dataset']['name'] == 'adult':
-        intervention_features = [1, 4, 5]
-    elif cfg['dataset']['name'] == 'donors':
-        intervention_features = [7, 8, 9]
-    else:
-        NotImplementedError
-
+    # set intervention features
+    intervention_features = utils.set_intervention_features(cfg)
+    # initial RootCLAM
     model_rootclam = rootclam.RootCLAM(cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
                                        train_X, x_test, rc_test, rc_quantile=args.rc_quantile,
                                        alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM,

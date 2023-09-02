@@ -24,6 +24,20 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="RecAD2080">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="RecAD3090">
+        <serverdata>
+          <mappings>
+            <mapping local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="RootCLAM3090">
         <serverdata>
           <mappings>

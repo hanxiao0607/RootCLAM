@@ -52,13 +52,13 @@ def get_args():
     parser.add_argument('--train_NaiveAM', default=1, type=int, help='train (1) or load (0) NaiveAM')
     parser.add_argument('--train_RootCLAM', default=1, type=int, help='train (1) or load (0) RootCLAM')
     parser.add_argument('--cost_function', default=1, type=int, help='using cost function')
-    parser.add_argument('--l2_alpha', default=1e-6, type=float, help='Weight for the l2 loss')
+    parser.add_argument('--l2_alpha', default=1e-4, type=float, help='Weight for the l2 loss')
     parser.add_argument('--device', default='cuda:0', type=str, help='Device to use')
     parser.add_argument('--max_epoch_RootCLAM', default=20, type=int, help='max epoch for training RootCLAM')
     parser.add_argument('--batch_size_RootCLAM', default=128, type=int, help='batch size for training RootCLAM')
     parser.add_argument('--learning_rate_RootCLAM', default=1e-4, type=float, help='Learning rate for RootCLAM')
     parser.add_argument('--rc_quantile', default=0.150, type=float, help='Abnormal quantile for root cause (π)')
-    parser.add_argument('--r_ratio', default=0.0, type=float, help='R ratio for flap samples (α)')
+    parser.add_argument('--r_ratio', default=0.5, type=float, help='R ratio for flap samples (α)')
     parser.add_argument('--print_all', default=0, type=int, help='print all results (1) or not (0)')
 
     return parser

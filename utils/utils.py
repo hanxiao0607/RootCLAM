@@ -69,7 +69,7 @@ def split_dataset(data_module, lst_ab_data_module=None, name='loan', training_si
             df_ab_temp = df_temp.loc[df_temp['y'] < thres_ab]
             df_ab_temp['label'] = 1
             df_ab_temp['rc'] = i
-            df_ab_temp = df_ab_temp.sample(n=portion_size_test_ab, random_state=seed)
+            df_ab_temp = df_ab_temp.sample(n=portion_size_test_ab+1, random_state=seed)
             df_ab = pd.concat([df_ab, df_ab_temp])
 
         df_ab = df_ab.sample(n=len(df_ab), random_state=seed)
@@ -77,7 +77,7 @@ def split_dataset(data_module, lst_ab_data_module=None, name='loan', training_si
         train = df_n.iloc[:size_train_n]
         valid = df_n.iloc[size_train_n:(size_train_n + size_valid_n)]
         test = pd.concat([df_n.iloc[(size_train_n + size_valid_n):(size_train_n + size_valid_n + size_test_n)] \
-                             , df_ab.iloc[:,:-1]], ignore_index=True)
+                             , df_ab.iloc[:size_test_ab,:-1]], ignore_index=True)
         test_rc = df_ab['rc'].values
         train_X = train.iloc[:, :(index + 1)].values
         valid_X = valid.iloc[:, :(index + 1)].values
@@ -95,9 +95,9 @@ def split_dataset(data_module, lst_ab_data_module=None, name='loan', training_si
         data_module.train_dataset.X0 = train_X
         data_module.valid_dataset.X0 = valid_X
         data_module.test_dataset.X0 = test_X
-        print(f'Training size: {len(train)}')
-        print(f'Validation size: {len(valid)}')
-        print(f'Testing size: {len(test)}')
+        print(f'Training normal size: {len(train)}')
+        print(f'Testing normal size: {len(test.loc[test["label"] == 0])}')
+        print(f'Testing abnormal size: {len(test.loc[test["label"] == 1])}')
 
         return thres_n, thres_ab, train, valid, test, test_rc
 
@@ -138,7 +138,7 @@ def split_dataset(data_module, lst_ab_data_module=None, name='loan', training_si
             df_ab_temp = df_temp.loc[df_temp['I'] > thres_ab]
             df_ab_temp['label'] = 1
             df_ab_temp['rc'] = i
-            df_ab_temp = df_ab_temp.sample(n=portion_size_test_ab, random_state=seed)
+            df_ab_temp = df_ab_temp.sample(n=portion_size_test_ab+1, random_state=seed)
             df_ab = pd.concat([df_ab, df_ab_temp])
 
         df_ab = df_ab.sample(n=len(df_ab), random_state=seed)
@@ -146,7 +146,7 @@ def split_dataset(data_module, lst_ab_data_module=None, name='loan', training_si
         train = df_n.iloc[:size_train_n]
         valid = df_n.iloc[size_train_n:(size_train_n + size_valid_n)]
         test = pd.concat([df_n.iloc[(size_train_n + size_valid_n):(size_train_n + size_valid_n + size_test_n)] \
-                             , df_ab.iloc[:,:-1]], ignore_index=True)
+                             , df_ab.iloc[:size_test_ab,:-1]], ignore_index=True)
         test_rc = df_ab['rc'].values
         train_X = train.iloc[:, :(index + 1)].values
         valid_X = valid.iloc[:, :(index + 1)].values
@@ -371,7 +371,7 @@ def prepare_dataset(args, cfg, dataset_name):
             for i in Cte.ADULT_AB_LIST:
                 dataset_params = cfg['dataset']['params'].copy()
                 dataset_params['dataset_name'] = i
-                dataset_params['num_samples_tr'] = args.training_size * 10
+                dataset_params['num_samples_tr'] = args.training_size * 15
 
                 data_module_ab = HeterogeneousSCMDataModule(**dataset_params)
 
@@ -382,7 +382,7 @@ def prepare_dataset(args, cfg, dataset_name):
             for i in Cte.LOAN_AB_LIST:
                 dataset_params = cfg['dataset']['params'].copy()
                 dataset_params['dataset_name'] = i
-                dataset_params['num_samples_tr'] = args.training_size * 10
+                dataset_params['num_samples_tr'] = args.training_size * 15
 
                 data_module_ab = HeterogeneousSCMDataModule(**dataset_params)
 

@@ -41,7 +41,7 @@ def main():
     data_module, lst_ab_data_module = utils.prepare_dataset(args, cfg, dataset_name)
     thres_n, thres_ab, df_train, df_valid, df_test, test_rc = utils.split_dataset(data_module,
                                                                                   lst_ab_data_module=lst_ab_data_module,
-                                                                                  name=cfg['dataset']['name'], \
+                                                                                  name=cfg['dataset']['name'],
                                                                                   training_size=args.training_size,
                                                                                   seed=args.sample_seed)
 
@@ -51,34 +51,28 @@ def main():
     ad_model, lst_pred, input_dim, out_dim, train_X = utils.prepare_ad_model(args, cfg, data_module, df_test)
     # prepare data for rootclam
     x_train, u_train, x_valid, u_valid, x_test, u_test, df, rc_test = utils.prepare_rootclam_training_data(df_test,
-                                                                                                        lst_pred,
-                                                                                                        test_rc,
-                                                                                                        data_module,
-                                                                                                        cfg[
-                                                                                                            'dataset'][
-                                                                                                            'name'])
+                                                                                                           lst_pred,
+                                                                                                           test_rc,
+                                                                                                           data_module,
+                                                                                                           cfg[
+                                                                                                               'dataset'][
+                                                                                                               'name'])
     # initial NaiveAM
     model_naiveam = naiveam.NaiveAM(input_dim, out_dim, ad_model, model_vaca, data_module,
-                           alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM, max_epoch=args.max_epoch_RootCLAM,
-                           device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
-                           R_ratio=args.r_ratio, lr=args.learning_rate_RootCLAM, print_all=args.print_all)
+                                    alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM,
+                                    max_epoch=args.max_epoch_RootCLAM,
+                                    device=args.device, data=cfg['dataset']['name'], cost_f=args.cost_function,
+                                    R_ratio=args.r_ratio, lr=args.learning_rate_RootCLAM, print_all=args.print_all)
 
     if args.train_NaiveAM:
         print('Training NaiveAM:')
         model_naiveam.train_NaiveAM(x_train, u_train, x_valid, u_valid)
     print('Results for NaiveAM:')
     model_naiveam.predict(x_test, u_test, thres_n=thres_n)
-    # initial RootCLAM
     print('-' * 50)
-    if cfg['dataset']['name'] == 'loan':
-        intervention_features = [3, 4, 5, 6]
-    elif cfg['dataset']['name'] == 'adult':
-        intervention_features = [1, 4, 5]
-    elif cfg['dataset']['name'] == 'donors':
-        intervention_features = [7, 8, 9]
-    else:
-        NotImplementedError
-
+    # set intervention features
+    intervention_features = utils.set_intervention_features(cfg)
+    # initial RootCLAM
     model_rootclam = rootclam.RootCLAM(cfg, input_dim, ad_model, model_vaca, data_module, intervention_features,
                                        train_X, x_test, rc_test, rc_quantile=args.rc_quantile,
                                        alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM,

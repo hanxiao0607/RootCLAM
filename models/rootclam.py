@@ -603,7 +603,6 @@ class RootCLAM(object):
         pd_test = PointDataset(torch.tensor(test_x).float(), torch.tensor(test_u).float())
         test_iter = DataLoader(pd_test, self.batch_size, shuffle=False, worker_init_fn=np.random.seed(42))
         _, lst_pred, x_cf_hat, lst_pred_gt, x_gt, x_changes = self._evaluate(test_iter)
-        print('VACA results:')
         print(f'{self.ad_model.name} pred: {(1 - sum(np.array(lst_pred)) / len(lst_pred))}')
         x_cf_hat_inverse = self.data_module.scaler.inverse_transform(x_cf_hat).numpy()
         if self.data == 'loan':
@@ -614,14 +613,11 @@ class RootCLAM(object):
             for i in range(len(df)):
                 lst_y.append((1 + math.exp(exp_val[i])) ** (-1))
             df['y'] = lst_y
-            print(f'GT CR: {len(df.loc[df["y"] > 0.9]) / len(df)}')
+            print(f'Ground Truth Flipping Ratio: {len(df.loc[df["y"] > 0.9]) / len(df)}')
             assert len(x_changes) == len(df), 'Size error for x_changes'
             df['change_value_real'] = x_changes
             df['change_value_org'] = np.sum((df.iloc[:, :-2].values - test_x) ** 2, axis=1) ** 0.5
-            print(f'Delta x Avg Real: {np.mean(df["change_value_real"].values)}')
-            print(f'Ab GT Avg Real: {np.mean(df.loc[df["y"] > 0.9]["change_value_real"].values)}')
-            print(f'Delta x Avg Org: {np.mean(df["change_value_org"].values)}')
-            print(f'Ab GT Avg Org: {np.mean(df.loc[df["y"] > 0.9]["change_value_org"].values)}')
+            print(f'Average Norm of Action Values: {np.mean(df["change_value_real"].values)}')
         elif self.data == 'adult':
             test_x = self.data_module.scaler.inverse_transform(F.pad(test_x, (0, 4, 0, 0))).numpy()
             df = pd.DataFrame(np.concatenate((x_cf_hat_inverse, test_u), axis=1), \
@@ -653,14 +649,11 @@ class RootCLAM(object):
                                                                              relationship=df[
                                                                                  ['L_0', 'L_1', 'L_2']].values)
             df['y'] = [0 if val <= thres_n else 1 for val in df['I'].values]
-            print(f'GT CR: {len(df.loc[df["y"] == 0]) / len(df)}')
+            print(f'Ground Truth Flipping Ratio: {len(df.loc[df["y"] == 0]) / len(df)}')
             assert len(x_changes) == len(df), 'Size error for x_changes'
             df['change_value_real'] = x_changes
             df['change_value_org'] = np.sum((df.iloc[:, :24].values - test_x[:, :-1]) ** 2, axis=1) ** 0.5
-            print(f'Delta x Avg Real: {np.mean(df["change_value_real"].values)}')
-            print(f'Ab GT Avg Real: {np.mean(df.loc[df["y"] == 0]["change_value_real"].values)}')
-            print(f'Delta x Avg Org: {np.mean(df["change_value_org"].values)}')
-            print(f'Ab GT Avg Org: {np.mean(df.loc[df["y"] == 0]["change_value_org"].values)}')
+            print(f'Average Norm of Action Values: {np.mean(df["change_value_real"].values)}')
         elif self.data == 'donors':
             test_x = self.data_module.scaler.inverse_transform(F.pad(test_x, (0, 1, 0, 0))).numpy()
             df = pd.DataFrame(x_cf_hat_inverse, columns=['at_least_1_teacher_referred_donor', 'fully_funded',
@@ -679,72 +672,14 @@ class RootCLAM(object):
             df['is_exciting'].loc[df['is_exciting'] <= 0] = -1
             df['is_exciting'].loc[df['is_exciting'] >= 1] = 0
             df['is_exciting'].loc[df['is_exciting'] == -1] = 1
-            print(f'GT CR: {len(df.loc[df["is_exciting"] == 0]) / len(df)}')
+            print(f'Ground Truth Flipping Ratio: {len(df.loc[df["is_exciting"] == 0]) / len(df)}')
             assert len(x_changes) == len(df), 'Size error for x_changes'
             df['change_value_real'] = x_changes
             df['change_value_org'] = np.sum((df.iloc[:, :-2].values - test_x[:, :-1]) ** 2, axis=1) ** 0.5
-            print(f'Delta x Avg Real: {np.mean(df["change_value_real"].values)}')
-            print(f'Ab GT Avg Real: {np.mean(df.loc[df["is_exciting"] == 0]["change_value_real"].values)}')
-            print(f'Delta x Avg Org: {np.mean(df["change_value_org"].values)}')
-            print(f'Ab GT Avg Org: {np.mean(df.loc[df["is_exciting"] == 0]["change_value_org"].values)}')
+            print(f'Average Norm of Action Values: {np.mean(df["change_value_real"].values)}')
         else:
             NotImplementedError
 
-        print('-' * 20)
-        print('GT results:')
-        if self.data == 'loan':
-            print(f'{self.ad_model.name} pred w causal: {(1 - sum(np.array(lst_pred_gt)) / len(lst_pred_gt))}')
-            x_gt_inverse = self.data_module.scaler.inverse_transform(x_gt).numpy()
-            df_gt = pd.DataFrame(x_gt_inverse, columns=['G', 'A', 'E', 'L', 'D', 'I', 'S'])
-            exp_val = -0.3 * (- df_gt['L'] - df_gt['D'] + df_gt['I'] + df_gt['S'] + df_gt['I'] * df_gt['S'])
-            lst_y = []
-            for i in range(len(df_gt)):
-                lst_y.append((1 + math.exp(exp_val[i])) ** (-1))
-            df_gt['y'] = lst_y
-            print(f'GT CR w causal: {len(df_gt.loc[df_gt["y"] > 0.9]) / len(df_gt)}')
-            df_gt['change_value'] = np.sum((df_gt.iloc[:, :-1].values - test_x) ** 2, axis=1) ** 0.5
-            print(f'GT x Avg w causal: {np.mean(df_gt["change_value"].values)}')
-            print(f'Ab GT Avg w causal: {np.mean(df_gt.loc[df_gt["y"] > 0.9]["change_value"].values)}')
-        elif self.data == 'adult':
-            print(f'{self.ad_model.name} pred w causal: {(1 - sum(np.array(lst_pred_gt)) / len(lst_pred_gt))}')
-            x_gt_inverse = self.data_module.scaler.inverse_transform(x_gt).numpy()
-            df_gt = pd.DataFrame(np.concatenate((x_gt_inverse, test_u), axis=1), \
-                                 columns=['R_0', 'R_1', 'R_2', 'A', 'N_0', 'N_1', 'N_2', 'N_3', 'S', 'E', 'H', \
-                                          'W_0', 'W_1', 'W_2', 'W_3', 'M_0', 'M_1', 'M_2', 'O_0', 'O_1', 'O_2', \
-                                          'L_0', 'L_1', 'L_2', 'I', 'U_R', 'U_A', 'U_N', 'U_S', 'U_E', 'U_H', \
-                                          'U_W', 'U_M', 'U_O', 'U_L', 'U_I'])
-            df_gt[['R_0', 'R_1', 'R_2', 'N_0', 'N_1', 'N_2', 'N_3', 'S', 'W_0', 'W_1', 'W_2', 'W_3', 'M_0', 'M_1',
-                   'M_2', 'O_0', 'O_1', 'O_2', 'L_0', 'L_1', 'L_2']] = np.round(
-                df_gt[['R_0', 'R_1', 'R_2', 'N_0', 'N_1',
-                       'N_2', 'N_3', 'S', 'W_0', 'W_1', 'W_2', 'W_3',
-                       'M_0', 'M_1', 'M_2', 'O_0', 'O_1', 'O_2', 'L_0',
-                       'L_1', 'L_2']].values)
-            df_gt['I'] = self.data_module.train_dataset.structural_eq['income'](u=df_gt[['U_I']].values,
-                                                                                race=df_gt[
-                                                                                    ['R_0', 'R_1', 'R_2']].values,
-                                                                                age=df_gt[['A']].values,
-                                                                                edu=df_gt[['E']].values,
-                                                                                occupation=df_gt[
-                                                                                    ['O_0', 'O_1', 'O_2']].values,
-                                                                                work_class=df_gt[['W_0', 'W_1', 'W_2',
-                                                                                                  'W_3']].values,
-                                                                                maritial=df_gt[
-                                                                                    ['M_0', 'M_1', 'M_2']].values,
-                                                                                hour=df_gt[['H']].values,
-                                                                                native_country=df_gt[
-                                                                                    ['N_0', 'N_1', 'N_2']].values,
-                                                                                gender=df_gt[['S']].values,
-                                                                                relationship=df_gt[
-                                                                                    ['L_0', 'L_1', 'L_2']].values)
-            df_gt['y'] = [0 if val <= thres_n else 1 for val in df_gt['I'].values]
-            print(f'GT CR w causal: {len(df_gt.loc[df_gt["y"] == 0]) / len(df_gt)}')
-            df_gt['change_value'] = np.sum((df_gt.iloc[:, :24].values - test_x[:, :-1]) ** 2, axis=1) ** 0.5
-            print(f'GT x Avg w causal: {np.mean(df_gt["change_value"].values)}')
-            print(f'Ab GT Avg w causal: {np.mean(df_gt.loc[df_gt["y"] == 0]["change_value"].values)}')
-        elif self.data == 'donors':
-            print('No GT results!')
-        else:
-            NotImplementedError
 
     def train_RootCLAM(self, train_x, train_u, valid_x, valid_u):
         pd_train = PointDataset(torch.tensor(train_x).float(), torch.tensor(train_u).float())
