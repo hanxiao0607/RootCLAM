@@ -43,5 +43,10 @@ Eample:
 
 ## Citation
 ```
-
+@article{han2022interpretable,
+  title={On Interpretable Anomaly Detection Using Causal Algorithmic Recourse},
+  author={Han, Xiao and Zhang, Lu and Wu, Yongkai and Yuan, Shuhan},
+  journal={arXiv preprint arXiv:2212.04031},
+  year={2022}
+}
 ```
