@@ -43,5 +43,21 @@ Eample:
 
 ## Citation
 ```
-
+@inproceedings{10.1145/3583780.3614995,
+        author = {Han, Xiao and Zhang, Lu and Wu, Yongkai and Yuan, Shuhan},
+        title = {On Root Cause Localization and Anomaly Mitigation through Causal Inference},
+        year = {2023},
+        isbn = {9798400701245},
+        publisher = {Association for Computing Machinery},
+        address = {New York, NY, USA},
+        url = {https://doi.org/10.1145/3583780.3614995},
+        doi = {10.1145/3583780.3614995},
+        abstract = {Due to a wide spectrum of applications in the real world, such as security, financial surveillance, and health risk, various deep anomaly detection models have been proposed and achieved state-of-the-art performance. However, besides being effective, in practice, the practitioners would further like to know what causes the abnormal outcome and how to further fix it. In this work, we propose RootCLAM, which aims to achieve Root Cause Localization and Anomaly Mitigation from a causal perspective. Especially, we formulate anomalies caused by external interventions on the normal causal mechanism and aim to locate the abnormal features with external interventions as root causes. After that, we further propose an anomaly mitigation approach that aims to recommend mitigation actions on abnormal features to revert the abnormal outcomes such that the counterfactuals guided by the causal mechanism are normal. Experiments on three datasets show that our approach can locate the root causes and further flip the abnormal labels.},
+        booktitle = {Proceedings of the 32nd ACM International Conference on Information and Knowledge Management},
+        pages = {699–708},
+        numpages = {10},
+        keywords = {root cause analysis, causal inference, anomaly mitigation},
+        location = {Birmingham, United Kingdom},
+        series = {CIKM '23}
+}
 ```
