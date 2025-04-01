@@ -3,14 +3,14 @@
 # RootCLAM: On Root Cause Localization and Anomaly Mitigation through Causal Inference
 A Pytorch implementation of [RootCLAM](https://dl.acm.org/doi/10.1145/3583780.3614995).
 
-## Configuration
+## 🧰 Configuration
 - Ubuntu 20.04
 - NVIDIA driver 495.29.05 
 - CUDA 11.3
 - Python 3.9.7
 - PyTorch 1.9.0
 
-## Installation
+## ⚙️ Installation
 This code requires the packages listed in requirements.txt.
 A virtual environment is recommended to run this code
 
@@ -24,7 +24,7 @@ deactivate
 ```
 Reference: https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
 
-## Instructions
+## 🚀 Instructions
 Clone the template project, replacing ``my-project`` with the name of the project you are creating:
 
         git clone https://github.com/hanxiao0607/RootCLAM.git my-project
@@ -40,7 +40,7 @@ Eample:
 
         python3 main.py adult ae
 
-## Citation
+## 📄 Citation
 ```
 @inproceedings{10.1145/3583780.3614995,
         author = {Han, Xiao and Zhang, Lu and Wu, Yongkai and Yuan, Shuhan},
