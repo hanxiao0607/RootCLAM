@@ -32,8 +32,15 @@ def main():
             print('Please give the dataset name (adult, loan, or donors) and the model name (ae or deepsvdd)!')
             return 1
         args, unknown = parser.parse_known_args()
-
+        # Save parsed arguments to a local file for inspection
+    
     cfg = utils.prepare_cfg(args, dataset_name)
+    
+    # import json
+    # with open('cfg_dump.json', 'w') as f:
+    #     json.dump(cfg, f, indent=2)
+    # assert False, 'This code is not ready yet!'
+    
     # set seed for reproducibility
     pl.seed_everything(cfg['seed'])
     utils.set_seed(cfg['seed'])
@@ -54,9 +61,7 @@ def main():
                                                                                                            lst_pred,
                                                                                                            test_rc,
                                                                                                            data_module,
-                                                                                                           cfg[
-                                                                                                               'dataset'][
-                                                                                                               'name'])
+                                                                                                           cfg['dataset']['name'])
     # initial NaiveAM
     model_naiveam = naiveam.NaiveAM(input_dim, out_dim, ad_model, model_vaca, data_module,
                                     alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM,

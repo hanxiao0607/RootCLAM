@@ -1,0 +1,93 @@
+{
+  "dataset": {
+    "name": "adult",
+    "params1": {
+      "data_dir": "../Data",
+      "batch_size": 1000,
+      "num_workers": 0
+    },
+    "params2": {
+      "num_samples_tr": 10000,
+      "equations_type": "linear",
+      "normalize": "lik",
+      "likelihood_names": "c_d_c_b_d_d_c_c_c_c_d",
+      "lambda_": 0.05,
+      "normalize_A": null
+    },
+    "params": {
+      "data_dir": "../Data",
+      "batch_size": 1000,
+      "num_workers": 0,
+      "num_samples_tr": 10000,
+      "equations_type": "linear",
+      "normalize": "lik",
+      "likelihood_names": "c_d_c_b_d_d_c_c_c_c_d",
+      "lambda_": 0.05,
+      "normalize_A": null
+    }
+  },
+  "optimizer": {
+    "name": "adam",
+    "params": {
+      "lr": 0.005,
+      "betas": [
+        0.9,
+        0.999
+      ],
+      "weight_decay": 1.2e-06
+    }
+  },
+  "scheduler": {
+    "name": "exp_lr",
+    "params": {
+      "gamma": 0.99
+    }
+  },
+  "model": {
+    "name": "vaca",
+    "params": {
+      "architecture": "dgnn",
+      "estimator": "elbo",
+      "h_dim_list_dec": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "h_dim_list_enc": [
+        16,
+        16
+      ],
+      "z_dim": 4,
+      "distr_z": "normal",
+      "dropout_adj_rate": 0.0,
+      "dropout_adj_pa_rate": 0.2,
+      "dropout_adj_pa_prob_keep_self": 0.0,
+      "residual": 1.0,
+      "norm_categorical": 0
+    }
+  },
+  "seed": 0,
+  "root_dir": "exper_test",
+  "early_stopping": true,
+  "trainer": {
+    "max_epochs": 500,
+    "min_epochs": 100,
+    "limit_train_batches": 1.0,
+    "limit_val_batches": 1.0,
+    "limit_test_batches": 1.0,
+    "check_val_every_n_epoch": 2,
+    "progress_bar_refresh_rate": 1,
+    "flush_logs_every_n_steps": 100,
+    "log_every_n_steps": 2,
+    "precision": 32,
+    "terminate_on_nan": true,
+    "auto_select_gpus": false,
+    "deterministic": true,
+    "weights_summary": null,
+    "gpus": 0,
+    "num_sanity_val_steps": 2,
+    "track_grad_norm": -1,
+    "gradient_clip_val": 0.0
+  }
+}
