@@ -10,29 +10,26 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 
 
 def main():
-    if len(sys.argv) < 3:
+    dataset_name = 'adult'
+    model_name = 'ae'
+    
+    if dataset_name == 'adult' and model_name == 'ae':
+        parser = adult_ae.get_args()
+    elif dataset_name == 'adult' and model_name == 'deepsvdd':
+        parser = adult_deepsvdd.get_args()
+    elif dataset_name == 'loan' and model_name == 'ae':
+        parser = loan_ae.get_args()
+    elif dataset_name == 'loan' and model_name == 'deepsvdd':
+        parser = loan_deepsvdd.get_args()
+    elif dataset_name == 'donors' and model_name == 'ae':
+        parser = donors_ae.get_args()
+    elif dataset_name == 'donors' and model_name == 'deepsvdd':
+        parser = donors_deepsvdd.get_args()
+    else:
         print('Please give the dataset name (adult, loan, or donors) and the model name (ae or deepsvdd)!')
         return 1
-    else:
-        dataset_name = sys.argv[1]
-        model_name = sys.argv[2]
-        if dataset_name == 'adult' and model_name == 'ae':
-            parser = adult_ae.get_args()
-        elif dataset_name == 'adult' and model_name == 'deepsvdd':
-            parser = adult_deepsvdd.get_args()
-        elif dataset_name == 'loan' and model_name == 'ae':
-            parser = loan_ae.get_args()
-        elif dataset_name == 'loan' and model_name == 'deepsvdd':
-            parser = loan_deepsvdd.get_args()
-        elif dataset_name == 'donors' and model_name == 'ae':
-            parser = donors_ae.get_args()
-        elif dataset_name == 'donors' and model_name == 'deepsvdd':
-            parser = donors_deepsvdd.get_args()
-        else:
-            print('Please give the dataset name (adult, loan, or donors) and the model name (ae or deepsvdd)!')
-            return 1
-        args, unknown = parser.parse_known_args()
-        # Save parsed arguments to a local file for inspection
+    args, unknown = parser.parse_known_args()
+    # Save parsed arguments to a local file for inspection
     
     cfg = utils.prepare_cfg(args, dataset_name)
     
@@ -44,6 +41,7 @@ def main():
     # set seed for reproducibility
     pl.seed_everything(cfg['seed'])
     utils.set_seed(cfg['seed'])
+    
     # prepare dataset
     data_module, lst_ab_data_module = utils.prepare_dataset(args, cfg, dataset_name)
     thres_n, thres_ab, df_train, df_valid, df_test, test_rc = utils.split_dataset(data_module,

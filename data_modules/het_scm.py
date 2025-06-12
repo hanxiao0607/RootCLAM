@@ -199,31 +199,75 @@ class HeterogeneousSCMDataModule(pl.LightningDataModule):
                     Cte.LOAN_AB_SAVINGS, Cte.LOAN_AB_LA_LD, Cte.LOAN_AB_LA_I, Cte.LOAN_AB_LA_S, Cte.LOAN_AB_LD_I,
                     Cte.LOAN_AB_LD_S, Cte.LOAN_AB_I_S, Cte.LOAN_AB_LA_LD_I, Cte.LOAN_AB_LA_LD_S, Cte.LOAN_AB_LA_I_S,
                     Cte.LOAN_AB_LD_I_S, Cte.LOAN_AB_LA_LD_I_S]:
-            root_dir = os.path.join(data_dir, 'VACA')
+            
+            if equations_type == 'real':
+                root_dir = data_dir
+                
+                # load real datas
+                import pandas as pd
+                from sklearn.model_selection import train_test_split
+                
+                column_names = [
+                    "age", "workclass", "fnlwgt", "education", "education-num",
+                    "marital-status", "occupation", "relationship", "race", "sex",
+                    "capital-gain", "capital-loss", "hours-per-week", "native-country",
+                    "income"
+                ]
 
-            self.train_dataset = dataset_fn(root_dir=root_dir,
-                                            split='train',
-                                            num_samples=num_samples_tr,
-                                            equations_type=equations_type,
-                                            likelihood_names=likelihood_names,
-                                            lambda_=lambda_,
-                                            transform=None)
+                df = pd.read_csv(root_dir, header=None, names=column_names, na_values=" ?", skipinitialspace=True)
 
-            self.valid_dataset = dataset_fn(root_dir=root_dir,
-                                            split='valid',
-                                            num_samples=int(0.5 * num_samples_tr),
-                                            equations_type=equations_type,
-                                            likelihood_names=likelihood_names,
-                                            lambda_=lambda_,
-                                            transform=None)
+                self.df = df
+                self.features = df.drop(columns='income').values
+                self.labels = df['income'].values
+                self.num_samples = len(df)
+                
+                df_train, df_temp = train_test_split(df, test_size=0.3, random_state=seed, shuffle=True)
+                df_val, df_test = train_test_split(df_temp, test_size=2/3, random_state=seed, shuffle=True)
 
-            self.test_dataset = dataset_fn(root_dir=root_dir,
-                                           split='test',
-                                           num_samples=int(0.5 * num_samples_tr),
-                                           equations_type=equations_type,
-                                           likelihood_names=likelihood_names,
-                                           lambda_=lambda_,
-                                           transform=None)
+                self.train_dataset = df_train
+                self.valid_dataset = df_val
+                self.test_dataset = df_test
+
+                # if kwargs.get('split', None) == 'train':
+                #     self.df = df_train
+                # elif kwargs.get('split', None) == 'valid':
+                #     self.df = df_val
+                # elif kwargs.get('split', None) == 'test':
+                #     self.df = df_test
+                # else:
+                #     raise ValueError(f"Unknown split: {kwargs.get('split', None)}")
+
+                self.features = self.df.drop(columns='income').values
+                self.labels = self.df['income'].values
+                self.num_samples = len(self.df)
+            
+            
+            else:
+                root_dir = os.path.join(data_dir, 'VACA')
+
+                self.train_dataset = dataset_fn(root_dir=root_dir,
+                                                split='train',
+                                                num_samples=num_samples_tr,
+                                                equations_type=equations_type,
+                                                likelihood_names=likelihood_names,
+                                                lambda_=lambda_,
+                                                transform=None)
+
+                self.valid_dataset = dataset_fn(root_dir=root_dir,
+                                                split='valid',
+                                                num_samples=int(0.5 * num_samples_tr),
+                                                equations_type=equations_type,
+                                                likelihood_names=likelihood_names,
+                                                lambda_=lambda_,
+                                                transform=None)
+
+                self.test_dataset = dataset_fn(root_dir=root_dir,
+                                                split='test',
+                                                num_samples=int(0.5 * num_samples_tr),
+                                                equations_type=equations_type,
+                                                likelihood_names=likelihood_names,
+                                                lambda_=lambda_,
+                                                transform=None)
 
     @property
     def likelihood_list(self):

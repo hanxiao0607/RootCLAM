@@ -266,7 +266,6 @@ class AdultSCM(ToySCM):
                 INCOME: Gamma(1, 1),  # Continuous, positive
             }
 
-
         else:
             raise NotImplementedError
 
