@@ -269,6 +269,7 @@ class AdultSCM(ToySCM):
         else:
             raise NotImplementedError
 
+        # discribe the influence of each node on the others
         adj_edges = {RACE: [EDU, HOUR, MARITIAL, OCCUPATION, INCOME],
                      AGE: [INCOME, OCCUPATION, MARITIAL, WORK_CLASS, EDU, HOUR, RELATIONSHIP],
                      NATIVE_COUNTRY: [EDU, HOUR, MARITIAL, RELATIONSHIP, INCOME, WORK_CLASS],
@@ -342,6 +343,7 @@ class AdultSCM(ToySCM):
             x_out = np.zeros([x.shape[0], lik.domain_size])
             x = x.astype(np.int32)
             for i in range(x.shape[0]):
+                
                 x_out[i, x[i, 0]] = 1
 
             x = x_out.copy().astype(np.float32)
