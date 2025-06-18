@@ -146,9 +146,14 @@ class AdultSCM(ToySCM):
                 g = 1 * (g == 0) + 2 * (g == 1)
 
                 out = np.concatenate([r, a, w, h, n, g], axis=1)
-                out = stats.mode(out, axis=1)[0]
+                # out = stats.mode(out, axis=1)[0]
+                
+                mode_result = stats.mode(out, axis=1)[0]
+                if mode_result.ndim == 1:
+                    mode_result = mode_result.reshape(-1, 1)
 
-                return out
+                # return out
+                return mode_result
 
             def eq_occupation(u, race, age, edu, work_class, maritial, gender):
                 '''Three categories
@@ -334,11 +339,14 @@ class AdultSCM(ToySCM):
         node_name = self.nodes_list[obs_id]
         lik = self.likelihoods[obs_id][0]
         f = self.structural_eq[node_name]
+        # print("doing sample obs", node_name)
         u_is_none = u is None
         if u_is_none:
             u = self._sample_noise(node_name, n_samples)
         x = f(u, **parents_dict) if isinstance(parents_dict, dict) else f(u)
         x = x.astype(np.float32)
+        
+        # if the node is categorical, we need to one-hot encode it
         if node_name in self.categorical_nodes:
             x_out = np.zeros([x.shape[0], lik.domain_size])
             x = x.astype(np.int32)

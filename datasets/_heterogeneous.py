@@ -702,7 +702,9 @@ class HeterogeneousSCM(torch.utils.data.Dataset):
 
     def prepare_data(self, normalize_A=None, add_self_loop=True):
         self.prepare_adj(normalize_A, add_self_loop)
+        print("preparing adj done!")
         self._create_data()  # This should create X, and U
+        print("creating data done!")
         self.X0, self.mask_X0, self.dim_of_x_in_x0 = self.fill_up_with_zeros(self.X)  # [800 x 48]
 
         self.total_num_dim_x0 = self.X0.shape[1]

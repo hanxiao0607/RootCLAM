@@ -144,9 +144,16 @@ class AdultSCM(ToySCM):
                 g[g < 0] = 0
                 g[g > 1] = 1
                 g = 1 * (g == 0) + 2 * (g == 1)
-
+                
                 out = np.concatenate([r, a, w, h, n, g], axis=1)
-                out = stats.mode(out, axis=1)[0]
+                # out = stats.mode(out, axis=1)[0]
+                
+                mode_result = stats.mode(out, axis=1)[0]
+                if mode_result.ndim == 1:
+                    mode_result = mode_result.reshape(-1, 1)
+
+                # return out
+                return mode_result
 
                 return out
 

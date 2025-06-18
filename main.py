@@ -49,17 +49,22 @@ def main():
                                                                                   name=cfg['dataset']['name'],
                                                                                   training_size=args.training_size,
                                                                                   seed=args.sample_seed)
-
+    print("dataset prepared")
+    
     # prepare vaca
     model_vaca = utils.prepare_vaca(args, cfg, data_module)
     # prepare anomaly detection model
     ad_model, lst_pred, input_dim, out_dim, train_X = utils.prepare_ad_model(args, cfg, data_module, df_test)
+    print("anomaly detection model prepared")
+    
     # prepare data for rootclam
     x_train, u_train, x_valid, u_valid, x_test, u_test, df, rc_test = utils.prepare_rootclam_training_data(df_test,
                                                                                                            lst_pred,
                                                                                                            test_rc,
                                                                                                            data_module,
                                                                                                            cfg['dataset']['name'])
+    print("rootclam data prepared")
+    
     # initial NaiveAM
     model_naiveam = naiveam.NaiveAM(input_dim, out_dim, ad_model, model_vaca, data_module,
                                     alpha=args.l2_alpha, batch_size=args.batch_size_RootCLAM,

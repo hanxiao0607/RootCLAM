@@ -8,3 +8,5 @@ modules/blocks/__pycache__/*
 modules/blocks/pna/__pycache__/*
 utils/__pycache__/*
 utils/metrics/__pycache__/*
+data/*
+exper_test/*
