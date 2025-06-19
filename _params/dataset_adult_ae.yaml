@@ -3,7 +3,7 @@ dataset:
   params1:
     # data_dir: data/adult/adult.data
     data_dir: data
-    batch_size: 4096 #  1024
+    batch_size: 1000 #  1024
     num_workers: 0
   params2: # Parameters we can cross validate
     num_samples_tr: 10000
